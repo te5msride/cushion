@@ -11,6 +11,10 @@
 #   targets   : list of SofaTarget dicts (optional)          [list, No Type Hint]
 #   camPos    : Point3d — SOFA camera position (optional)    [item, Point3d]
 #   camTarget : Point3d — SOFA camera look-at (optional)     [item, Point3d]
+#   viewFile  : str — path to a saved SOFA .view file to use [item, str]
+#               instead of camPos/camTarget (Save View in the SOFA GUI
+#               writes <scene>.py.qglviewer.view — copy it anywhere and
+#               point here; wins over camPos/camTarget)
 #   projDir   : str — output folder (created if missing)     [item, str]
 #   repo      : str — path to the sofa-gh folder             [item, str]
 #   dt        : float — timestep, s (default 0.01)           [item, float]
@@ -153,6 +157,10 @@ if write and bodies and projDir:
         tg = _unwrap(tg)
         if not tg:
             continue
+        if not isinstance(tg, dict):
+            raise TypeError(
+                f"targets input received {type(tg).__name__} instead of a dict — "
+                "set the 'targets' input Type hint to 'No Type Hint'")
         if tg.get("mesh_file"):
             p = tg["mesh_file"]
         else:
@@ -166,6 +174,7 @@ if write and bodies and projDir:
         "camera": ({"position": [camPos.X, camPos.Y, camPos.Z],
                     "look_at": [camTarget.X, camTarget.Y, camTarget.Z]}
                    if (camPos is not None and camTarget is not None) else None),
+        "view_file": viewFile.strip().strip('"\'') if viewFile else None,
         "gravity": [0.0, 0.0, float(gravityZ)] if gravityZ is not None else None,
         "floor": ({"point": [0.0, 0.0, float(floorZ)],
                    "size": float(floorSize) if floorSize else 400.0}

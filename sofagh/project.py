@@ -120,7 +120,78 @@ def write_project(project_dir, bodies, profiles, options=None, targets=None):
         shutil.copy(os.path.join(RUNTIME_DIR, fname),
                     os.path.join(project_dir, fname))
 
-    return os.path.join(project_dir, "scene.py")
+    scene_path = os.path.join(project_dir, "scene.py")
+
+    # Camera: runSofa's Qt viewer ignores scene cameras but always loads
+    # <scene>.qglviewer.view — so the camera option is materialized as
+    # that file. A user-saved .view file (Save View button) wins.
+    if opts.get("view_file"):
+        shutil.copy(opts["view_file"], scene_path + ".qglviewer.view")
+    elif opts.get("camera"):
+        _write_view_file(scene_path, opts["camera"])
+
+    return scene_path
+
+
+def _write_view_file(scene_path, camera):
+    """Write <scene>.qglviewer.view: 'px py pz' + 'qx qy qz qw'.
+
+    QGLViewer convention: camera looks along its local -z, up = +y.
+    World up assumed +z (Rhino)."""
+    px, py, pz = camera["position"]
+    tx, ty, tz = camera["look_at"]
+
+    def sub(a, b):
+        return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+
+    def cross(a, b):
+        return [a[1] * b[2] - a[2] * b[1],
+                a[2] * b[0] - a[0] * b[2],
+                a[0] * b[1] - a[1] * b[0]]
+
+    def norm(v):
+        n = math.sqrt(sum(c * c for c in v)) or 1.0
+        return [c / n for c in v]
+
+    zc = norm(sub([px, py, pz], [tx, ty, tz]))     # camera z = backward
+    up = [0.0, 0.0, 1.0]
+    if abs(zc[0] * up[0] + zc[1] * up[1] + zc[2] * up[2]) > 0.999:
+        up = [0.0, 1.0, 0.0]                        # looking along world z
+    xc = norm(cross(up, zc))
+    yc = cross(zc, xc)
+
+    # rotation matrix (columns xc, yc, zc) -> quaternion (x, y, z, w)
+    m = [[xc[0], yc[0], zc[0]],
+         [xc[1], yc[1], zc[1]],
+         [xc[2], yc[2], zc[2]]]
+    tr = m[0][0] + m[1][1] + m[2][2]
+    if tr > 0:
+        s = math.sqrt(tr + 1.0) * 2
+        qw = 0.25 * s
+        qx = (m[2][1] - m[1][2]) / s
+        qy = (m[0][2] - m[2][0]) / s
+        qz = (m[1][0] - m[0][1]) / s
+    elif m[0][0] > m[1][1] and m[0][0] > m[2][2]:
+        s = math.sqrt(1.0 + m[0][0] - m[1][1] - m[2][2]) * 2
+        qw = (m[2][1] - m[1][2]) / s
+        qx = 0.25 * s
+        qy = (m[0][1] + m[1][0]) / s
+        qz = (m[0][2] + m[2][0]) / s
+    elif m[1][1] > m[2][2]:
+        s = math.sqrt(1.0 + m[1][1] - m[0][0] - m[2][2]) * 2
+        qw = (m[0][2] - m[2][0]) / s
+        qx = (m[0][1] + m[1][0]) / s
+        qy = 0.25 * s
+        qz = (m[1][2] + m[2][1]) / s
+    else:
+        s = math.sqrt(1.0 + m[2][2] - m[0][0] - m[1][1]) * 2
+        qw = (m[1][0] - m[0][1]) / s
+        qx = (m[0][2] + m[2][0]) / s
+        qy = (m[1][2] + m[2][1]) / s
+        qz = 0.25 * s
+
+    with open(scene_path + ".qglviewer.view", "w") as f:
+        f.write(f"{px} {py} {pz}\n{qx} {qy} {qz} {qw}\n")
 
 
 def _relpath(path, project_dir):
