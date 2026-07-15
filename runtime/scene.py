@@ -33,7 +33,7 @@ PLUGINS = (
     "Sofa.GL.Component.Rendering3D Sofa.Component.LinearSolver.Preconditioner "
     "Sofa.Component.Engine.Select Sofa.Component.Mapping.NonLinear "
     "Sofa.Component.Constraint.Lagrangian.Model Sofa.Component.Topology.Container.Dynamic "
-    "SofaValidation"
+    "SofaValidation SofaExporter"
 )
 
 
@@ -55,6 +55,35 @@ def _add_floor(rootNode, floor):
     node.addObject("PointCollisionModel", simulated=False, moving=False)
     node.addObject("OglModel", position=positions, triangles=triangles,
                    color=[0.5, 0.5, 0.5, 0.4])
+
+
+def _add_target(rootNode, tgt):
+    """Rigid interaction object (graspable target). Approximation: unit
+    rotational inertia (UniformMass totalMass on Rigid3); fine for
+    objects that mostly translate / rest until grasped."""
+    t = rootNode.addChild(tgt["name"])
+    t.addObject("EulerImplicitSolver", name="odesolver")
+    t.addObject("SparseLDLSolver", name="linearSolver")
+    t.addObject("MechanicalObject", template="Rigid3",
+                position=tgt.get("frame", [0, 0, 0, 0, 0, 0, 1]))
+    t.addObject("UniformMass", totalMass=tgt.get("mass", 0.01))
+    t.addObject("UncoupledConstraintCorrection")
+
+    col = t.addChild("collision")
+    col.addObject("MeshSTLLoader", name="loader", filename=_abspath(tgt["mesh"]))
+    col.addObject("MeshTopology", src="@loader")
+    col.addObject("MechanicalObject")
+    col.addObject("TriangleCollisionModel", name="target")
+    col.addObject("LineCollisionModel", name="target")
+    col.addObject("PointCollisionModel", name="target")
+    col.addObject("RigidMapping")
+
+    visu = t.addChild("visual")
+    visu.addObject("MeshSTLLoader", name="loader", filename=_abspath(tgt["mesh"]))
+    visu.addObject("OglModel", src="@loader",
+                   color=tgt.get("color", [0.3, 0.3, 0.3, 1.0]))
+    visu.addObject("RigidMapping")
+    return t
 
 
 def _add_body(rootNode, body, spec):
@@ -87,6 +116,14 @@ def _add_body(rootNode, body, spec):
                     listening=1, showPositions=True, PositionsColor="1 0 1 1",
                     sizeFactor=10, ExportPositions=True,
                     fileName=os.path.join(HERE, "monitor", body["name"]))
+
+    # Full deformed-shape export (legacy VTK series, read back by SofaShape)
+    if body.get("export_shape"):
+        b.addObject("VTKExporter",
+                    filename=os.path.join(HERE, "shape", body["name"]),
+                    listening=True, XMLformat=False, overwrite=False,
+                    tetras=True,
+                    exportEveryNumberOfSteps=int(body["export_shape"]))
 
     # Stiffened sub-regions (membranes / sensors): MeshROI overlay FEM
     for region in body.get("regions", []):
@@ -202,8 +239,16 @@ def createScene(rootNode):
     rootNode.addObject("BackgroundSetting", color=[1.0, 1.0, 1.0, 1.0])
     rootNode.addObject("OglSceneFrame", style="Arrows", alignment="TopRight")
 
+    cam = spec.get("camera")
+    if cam:
+        rootNode.addObject("InteractiveCamera", name="camera",
+                           position=cam["position"], lookAt=cam["look_at"])
+
     if spec.get("floor"):
         _add_floor(rootNode, spec["floor"])
+
+    for tgt in spec.get("targets", []):
+        _add_target(rootNode, tgt)
 
     for body in spec.get("bodies", []):
         _add_body(rootNode, body, spec)

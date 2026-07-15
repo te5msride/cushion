@@ -46,13 +46,14 @@ DEFAULTS = {
 }
 
 
-def write_project(project_dir, bodies, profiles, options=None):
+def write_project(project_dir, bodies, profiles, options=None, targets=None):
     """Build scene.json + input.csv, tet-mesh bodies, copy runtime files.
 
     bodies: list of body dicts (see runtime/scene.py for consumed keys).
       Each body needs either body["volume_vtk"] (pre-meshed) or
       body["volume_source"] (.step/.stl path) + body["mesh_size"].
     profiles: list of {"channel", "times", "values"} for inputs.write_csv.
+    targets: rigid interaction objects [{"name","mesh","mass",...}].
     Returns path to scene.py.
     """
     opts = dict(DEFAULTS)
@@ -62,7 +63,7 @@ def write_project(project_dir, bodies, profiles, options=None):
                 opts[k] = v
 
     os.makedirs(project_dir, exist_ok=True)
-    for sub in ("meshes", "monitor", "output"):
+    for sub in ("meshes", "monitor", "output", "shape"):
         os.makedirs(os.path.join(project_dir, sub), exist_ok=True)
 
     # Volume meshing
@@ -82,6 +83,10 @@ def write_project(project_dir, bodies, profiles, options=None):
             for item in body.get(group, []):
                 if item.get("mesh"):
                     item["mesh"] = _relpath(item["mesh"], project_dir)
+
+    targets = list(targets or [])
+    for tgt in targets:
+        tgt["mesh"] = _relpath(tgt["mesh"], project_dir)
 
     # Actuation CSV
     csv_path = os.path.join(project_dir, "input.csv")
@@ -103,6 +108,8 @@ def write_project(project_dir, bodies, profiles, options=None):
         "input_csv": "input.csv",
         "contacts": opts["contacts"],
         "floor": opts["floor"],
+        "camera": opts.get("camera"),
+        "targets": targets,
         "bodies": bodies,
     }
 

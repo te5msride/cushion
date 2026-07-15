@@ -52,6 +52,67 @@ def read_pressures(project_dir):
     return times, channels
 
 
+def list_shape_frames(project_dir, body_name):
+    """Sorted list of VTKExporter frame files for a body ([] if none)."""
+    import glob
+    import re
+    pattern = os.path.join(project_dir, "shape", body_name + "*.vtk")
+    files = glob.glob(pattern)
+
+    def framekey(p):
+        m = re.search(r"(\d+)\.vtk$", os.path.basename(p))
+        return int(m.group(1)) if m else -1
+
+    return sorted(files, key=framekey)
+
+
+def read_vtk_frame(path):
+    """Parse a legacy ASCII VTK unstructured grid (VTKExporter output).
+
+    Returns (points, tetras): points = [(x,y,z)...], tetras = [(a,b,c,d)...]
+    """
+    points, tetras = [], []
+    with open(path) as f:
+        tokens = f.read().split()
+    i = 0
+    n = len(tokens)
+    while i < n:
+        tok = tokens[i].upper()
+        if tok == "POINTS":
+            npts = int(tokens[i + 1])
+            base = i + 3  # skip count + dtype
+            for k in range(npts):
+                j = base + 3 * k
+                points.append((float(tokens[j]), float(tokens[j + 1]),
+                               float(tokens[j + 2])))
+            i = base + 3 * npts
+        elif tok == "CELLS":
+            ncells = int(tokens[i + 1])
+            j = i + 3
+            for _ in range(ncells):
+                cnt = int(tokens[j])
+                if cnt == 4:
+                    tetras.append(tuple(int(tokens[j + m]) for m in range(1, 5)))
+                j += cnt + 1
+            i = j
+        else:
+            i += 1
+    return points, tetras
+
+
+def boundary_triangles(tetras):
+    """Surface triangles of a tet mesh (faces belonging to exactly one tet)."""
+    faces = {}
+    for a, b, c, d in tetras:
+        for tri in ((a, b, c), (a, b, d), (a, c, d), (b, c, d)):
+            key = tuple(sorted(tri))
+            if key in faces:
+                del faces[key]  # shared face -> interior
+            else:
+                faces[key] = tri
+    return list(faces.values())
+
+
 def read_log_tail(project_dir, lines=40):
     path = os.path.join(project_dir, "runsofa.log")
     if not os.path.isfile(path):

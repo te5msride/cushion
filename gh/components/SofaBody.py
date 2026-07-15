@@ -24,6 +24,9 @@
 #   visualFaces : int — decimate visuals to this face count on export [item, int]
 #                 (0/empty = keep full resolution; visuals are never
 #                  simulated, so decimation is free physically)
+#   exportShape : int — export full deformed volume mesh every N steps [item, int]
+#                 during the sim (0/empty = off). Read back with the
+#                 SofaShape component. N=10 at dt=0.01 -> 10 frames/s.
 # Output:
 #   body       : dict, feed into SofaScene.bodies
 
@@ -56,4 +59,5 @@ if geo is not None or volumeFile:
         "visual_geos": [v for v in (visualGeo or []) if v],
         "visual_files": [f.strip().strip('"\'') for f in (visualFiles or []) if f],
         "visual_faces": int(visualFaces) if visualFaces else 0,
+        "export_shape": int(exportShape) if exportShape else 0,
     })

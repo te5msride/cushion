@@ -62,9 +62,11 @@ Full platform-specific steps: [docs/INSTALL.md](docs/INSTALL.md).
 | `SofaTendon` | Cable/tendon path (CableConstraint), displacement- or force-driven |
 | `SofaRegion` | Locally stiffened sub-region (membrane/sensor), closed mesh or auto-shell |
 | `PressureProfile` | Actuation keyframes for one channel (linear-interp, resampled) |
-| `SofaScene` | Writes the runnable project folder (meshes, scene.json, input.csv) |
+| `SofaTarget` | Rigid interaction object (graspable target, obstacle) |
+| `SofaScene` | Writes the runnable project folder (meshes, scene.json, input.csv); optional camera + targets |
 | `SofaRun` | Launches runSofa (GUI or headless batch) |
 | `SofaResults` | Parses trajectories + actuation history back into GH |
+| `SofaShape` | Rebuilds the deformed body surface at any exported frame |
 
 Details, input tables, modeling notes: [docs/COMPONENTS.md](docs/COMPONENTS.md).
 

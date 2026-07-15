@@ -6,8 +6,11 @@
 # CPython automatically (first run needs internet + a minute).
 #
 # Inputs:
-#   bodies    : list of SofaBody dicts                       [list, object]
-#   profiles  : list of PressureProfile dicts                [list, object]
+#   bodies    : list of SofaBody dicts                       [list, No Type Hint]
+#   profiles  : list of PressureProfile dicts                [list, No Type Hint]
+#   targets   : list of SofaTarget dicts (optional)          [list, No Type Hint]
+#   camPos    : Point3d — SOFA camera position (optional)    [item, Point3d]
+#   camTarget : Point3d — SOFA camera look-at (optional)     [item, Point3d]
 #   projDir   : str — output folder (created if missing)     [item, str]
 #   repo      : str — path to the sofa-gh folder             [item, str]
 #   dt        : float — timestep, s (default 0.01)           [item, float]
@@ -145,8 +148,24 @@ if write and bodies and projDir:
             "visuals": visuals,
         })
 
+    spec_targets = []
+    for tg in (targets or []):
+        tg = _unwrap(tg)
+        if not tg:
+            continue
+        if tg.get("mesh_file"):
+            p = tg["mesh_file"]
+        else:
+            p = ghcommon.write_stl(tg["geo"],
+                                   os.path.join(mesh_dir, tg["name"] + ".stl"))
+        spec_targets.append({"name": tg["name"], "mesh": p, "mass": tg["mass"]})
+        lines.append(f"target {tg['name']}: {os.path.basename(p)}")
+
     options = {
         "dt": float(dt) if dt else None,
+        "camera": ({"position": [camPos.X, camPos.Y, camPos.Z],
+                    "look_at": [camTarget.X, camTarget.Y, camTarget.Z]}
+                   if (camPos is not None and camTarget is not None) else None),
         "gravity": [0.0, 0.0, float(gravityZ)] if gravityZ is not None else None,
         "floor": ({"point": [0.0, 0.0, float(floorZ)],
                    "size": float(floorSize) if floorSize else 400.0}
@@ -159,6 +178,7 @@ if write and bodies and projDir:
 
     scenePath = sofaproject.write_project(
         projDir, spec_bodies,
-        [_unwrap(p) for p in (profiles or []) if p], options)
+        [_unwrap(p) for p in (profiles or []) if p], options,
+        targets=spec_targets)
     lines.append(f"scene: {scenePath}")
     info = "\n".join(lines)

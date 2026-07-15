@@ -100,12 +100,44 @@ regions never exist as separate bodies.
 Output: `profile` (object). Linear interpolation, resampled at 100 Hz
 into input.csv. Value held at nearest endpoint outside the keyframe span.
 
+## SofaTarget — rigid interaction object
+
+| Input | Hint | Access | Notes |
+|---|---|---|---|
+| geo | Geometry | item | closed surface, placed in world coords |
+| meshFile | str | item | alternative: existing closed `.stl` |
+| name | str | item | default `target1` |
+| mass | float | item | kg (default 0.01) |
+
+Output: `target` (object) → SofaScene.targets. Collision models named
+`target` (usable in contactRules). Body needs `collisionGeo` wired and
+usually a floor. v0 approximation: unit rotational inertia.
+
+## SofaShape — deformed shape playback
+
+Requires `exportShape` > 0 on SofaBody at scene-write time (exports the
+volume mesh every N steps; N=10 at dt=0.01 → 10 frames/s of sim time).
+
+| Input | Hint | Access | Notes |
+|---|---|---|---|
+| scenePath | str | item | |
+| bodyName | str | item | |
+| frame | int | item | index; −1/empty = last; wire slider 0..nFrames−1 |
+| repo | str | item | |
+| refresh | bool | item | |
+
+Outputs: `mesh` (deformed surface at that frame), `nFrames`, `time`
+(s), `info`.
+
 ## SofaScene — project writer
 
 | Input | Hint | Access | Notes |
 |---|---|---|---|
 | bodies | *No Type Hint* | list | |
 | profiles | *No Type Hint* | list | |
+| targets | *No Type Hint* | list | optional, from SofaTarget |
+| camPos | Point3d | item | optional SOFA camera position |
+| camTarget | Point3d | item | optional camera look-at (both needed) |
 | projDir | str | item | output folder, local disk (one per design) |
 | repo | str | item | |
 | dt | float | item | default 0.01 s |
