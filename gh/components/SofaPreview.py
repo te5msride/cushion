@@ -1,0 +1,86 @@
+# SofaPreview — view everything the written scene contains, in Rhino
+#
+# Rhino 8 Grasshopper Script component (Python 3).
+# Reads the project folder (scene.json + mesh files) after SofaScene
+# writes it, so it previews exactly what SOFA will simulate — including
+# the gmsh-meshed volume surface and any file-path meshes that never
+# existed as GH geometry. Wire each output through a Custom Preview
+# with its own color.
+#
+# Inputs (right-click each input -> Type hint):
+#   scenePath : str — from SofaScene                          [item, str]
+#   repo      : str — path to the sofa-gh folder              [item, str]
+#   refresh   : bool — toggle to re-read                      [item, bool]
+# Outputs:
+#   volumes   : list of Mesh — FEM volume surfaces (the real sim mesh)
+#   cavities  : list of Mesh
+#   regions   : list of Mesh
+#   targets   : list of Mesh
+#   monitorPts: list of Point3d
+#   fixBoxes  : list of Box
+#   info      : str
+
+import json
+import os
+import sys
+
+import Rhino.Geometry as rg
+
+volumes, cavities, regions, targets, monitorPts, fixBoxes = [], [], [], [], [], []
+info = "wire scenePath (SofaScene, write=True)"
+
+
+def _mesh(points, faces):
+    m = rg.Mesh()
+    for x, y, z in points:
+        m.Vertices.Add(x, y, z)
+    for f in faces:
+        m.Faces.AddFace(f[0], f[1], f[2])
+    m.Vertices.CombineIdentical(True, True)
+    m.Normals.ComputeNormals()
+    m.Compact()
+    return m
+
+
+if scenePath:
+    scenePath = scenePath.strip().strip('"\'')
+    if repo:
+        repo = repo.strip().strip('"\'').rstrip("\\/")
+        if repo not in sys.path:
+            sys.path.append(repo)
+    from sofagh import meshload, results
+
+    proj = os.path.dirname(scenePath)
+    spec_file = os.path.join(proj, "scene.json")
+    if not os.path.isfile(spec_file):
+        info = f"missing {spec_file}"
+    else:
+        with open(spec_file) as f:
+            spec = json.load(f)
+        counts = []
+
+        def _abs(p):
+            return p if os.path.isabs(p) else os.path.join(proj, p)
+
+        for body in spec.get("bodies", []):
+            if body.get("volume_vtk"):
+                pts, tets = meshload.read_vtk(_abs(body["volume_vtk"]))
+                volumes.append(_mesh(pts, results.boundary_triangles(tets)))
+            for c in body.get("cavities", []):
+                cavities.append(_mesh(*meshload.read_stl(_abs(c["mesh"]))))
+            for r in body.get("regions", []):
+                regions.append(_mesh(*meshload.read_stl(_abs(r["mesh"]))))
+            for p in body.get("monitor_points", []):
+                monitorPts.append(rg.Point3d(p[0], p[1], p[2]))
+            for bx in body.get("fixations", []):
+                bb = rg.BoundingBox(rg.Point3d(min(bx[0], bx[3]), min(bx[1], bx[4]), min(bx[2], bx[5])),
+                                    rg.Point3d(max(bx[0], bx[3]), max(bx[1], bx[4]), max(bx[2], bx[5])))
+                fixBoxes.append(rg.Box(bb))
+            counts.append(f"{body['name']}: vol {len(volumes)}, "
+                          f"cav {len(body.get('cavities', []))}, "
+                          f"reg {len(body.get('regions', []))}")
+
+        for t in spec.get("targets", []):
+            targets.append(_mesh(*meshload.read_stl(_abs(t["mesh"]))))
+
+        info = "; ".join(counts) + (f"; targets {len(targets)}" if targets else "")

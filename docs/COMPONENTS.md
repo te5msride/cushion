@@ -100,6 +100,22 @@ regions never exist as separate bodies.
 Output: `profile` (object). Linear interpolation, resampled at 100 Hz
 into input.csv. Value held at nearest endpoint outside the keyframe span.
 
+## SofaPreview — scene preview in the Rhino viewport
+
+Reads the written project folder and rebuilds everything as Rhino
+geometry — including file-path meshes that never existed in GH and the
+actual gmsh-meshed volume surface (meshing QA). Wire outputs through
+Custom Preview components with per-role colors.
+
+| Input | Hint | Access | Notes |
+|---|---|---|---|
+| scenePath | str | item | from SofaScene (write=True) |
+| repo | str | item | |
+| refresh | bool | item | |
+
+Outputs: `volumes` (FEM surfaces), `cavities`, `regions`, `targets`
+(Mesh lists), `monitorPts` (points), `fixBoxes` (boxes), `info`.
+
 ## SofaTarget — rigid interaction object
 
 | Input | Hint | Access | Notes |
