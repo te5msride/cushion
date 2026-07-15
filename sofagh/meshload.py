@@ -12,26 +12,20 @@ def read_stl(path):
     """Return (points, triangles). Vertices are NOT welded (STL stores
     3 verts per facet); weld on the Rhino side if needed."""
     with open(path, "rb") as f:
-        head = f.read(5)
-        f.seek(0)
-        if head[:5] == b"solid":
-            # could still be binary with a 'solid' header; sniff size
-            data = f.read()
-            if _looks_binary_stl(data):
-                return _binary_stl(data)
-            return _ascii_stl(data.decode(errors="replace"))
-        return _binary_stl(f.read())
-
-
-def _looks_binary_stl(data):
-    if len(data) < 84:
-        return False
-    (n,) = struct.unpack_from("<I", data, 80)
-    return len(data) == 84 + n * 50
+        data = f.read()
+    # ASCII iff it starts with 'solid' AND actually contains facet text
+    # ('solid'-headed binary files exist in the wild)
+    if data[:5] == b"solid" and b"vertex" in data[:1000]:
+        return _ascii_stl(data.decode(errors="replace"))
+    return _binary_stl(data)
 
 
 def _binary_stl(data):
+    if len(data) < 84:
+        return [], []
     (n,) = struct.unpack_from("<I", data, 80)
+    # tolerate truncated files / writers with an off-by-one facet count
+    n = min(n, (len(data) - 84) // 50)
     pts, tris = [], []
     off = 84
     for i in range(n):
