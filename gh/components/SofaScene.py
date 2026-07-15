@@ -69,21 +69,36 @@ if write and bodies and projDir:
     os.makedirs(mesh_dir, exist_ok=True)
     lines = []
 
-    from Grasshopper.Kernel.Types import GH_ObjectWrapper
+    import builtins
+    if not hasattr(builtins, "_sofagh_registry"):
+        builtins._sofagh_registry = {}
 
-    def _unwrap(x):
-        return x.Value if isinstance(x, GH_ObjectWrapper) else x
+    def _resolve(x):
+        """Token string -> dict from the shared registry (tolerates raw
+        dicts and GH_ObjectWrapper from older component versions)."""
+        if x is None:
+            return None
+        if hasattr(x, "Value") and not isinstance(x, (str, dict)):
+            x = x.Value
+        if isinstance(x, str) and x.startswith("sofagh::"):
+            data = builtins._sofagh_registry.get(x)
+            if data is None:
+                raise ValueError(
+                    "stale sofagh reference — recompute the upstream "
+                    "component (registry empties when Rhino restarts)")
+            return data
+        return x
 
     spec_bodies = []
     for bd in bodies:
-        bd = _unwrap(bd)
+        bd = _resolve(bd)
         if not bd:
             continue
         if not isinstance(bd, dict):
             raise TypeError(
-                f"bodies input received {type(bd).__name__} instead of a dict — "
-                "set the 'bodies' input Type hint to 'No Type Hint' and make "
-                "sure it comes straight from a SofaBody component")
+                f"bodies input received {type(bd).__name__} instead of a "
+                "sofa-gh token — wire it straight from a SofaBody component "
+                "(re-paste the current SofaBody script if this persists)")
         bname = bd["name"]
 
         # --- volume: existing file, or Brep -> STEP (preferred), else STL
@@ -165,7 +180,7 @@ if write and bodies and projDir:
 
     spec_targets = []
     for ti, tg in enumerate(targets or []):
-        tg = _unwrap(tg)
+        tg = _resolve(tg)
         if not tg:
             continue
         if isinstance(tg, str):
@@ -176,13 +191,13 @@ if write and bodies and projDir:
                 tg = {"name": f"target_{stem}", "mesh_file": path, "mass": 0.01}
             else:
                 raise TypeError(
-                    f"targets item {ti} is a string but not an existing .stl "
-                    f"path: {path!r}. Wire SofaTarget outputs (or valid .stl "
-                    "paths) into targets, with Type hint = No Type Hint.")
+                    f"targets item {ti} is a string but neither a sofa-gh "
+                    f"token nor an existing .stl path: {path!r}. Wire it "
+                    "from a SofaTarget component (current script).")
         if not isinstance(tg, dict):
             raise TypeError(
-                f"targets input received {type(tg).__name__} instead of a dict — "
-                "set the 'targets' input Type hint to 'No Type Hint'")
+                f"targets input received {type(tg).__name__} — wire it "
+                "straight from a SofaTarget component")
         if tg.get("mesh_file"):
             p = tg["mesh_file"]
         else:
@@ -209,7 +224,7 @@ if write and bodies and projDir:
 
     scenePath = sofaproject.write_project(
         projDir, spec_bodies,
-        [_unwrap(p) for p in (profiles or []) if p], options,
+        [_resolve(p) for p in (profiles or []) if p], options,
         targets=spec_targets)
     lines.append(f"scene: {scenePath}")
     info = "\n".join(lines)

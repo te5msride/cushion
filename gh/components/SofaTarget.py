@@ -7,23 +7,31 @@
 #   name     : str — default "target1"                             [item, str]
 #   mass     : float — kg (default 0.01)                           [item, float]
 # Output:
-#   target   : dict (wrapped), feed into SofaScene.targets
+#   target   : str token, feed into SofaScene.targets
 #
 # Notes:
-# * Collision models are named "target" — usable in contactRules, e.g.
-#   "target actuator1 FrictionContactConstraint". With no rules, the
-#   default friction contact applies to everything anyway.
-# * The body needs collisionGeo wired for contact to happen at all,
-#   and usually a floor (floorZ) so the target has somewhere to rest.
-# * v0 approximation: rotational inertia is not computed from the
-#   shape (unit inertia). Good enough for grasp/poke tests.
+# * Collision models are named "target" — usable in contactRules.
+# * The body needs collisionGeo wired for contact, usually + a floor.
+# * v0: unit rotational inertia (fine for grasp/poke tests).
 
-from Grasshopper.Kernel.Types import GH_ObjectWrapper
+import builtins
+
+meshFile = globals().get("meshFile")
+
+if not hasattr(builtins, "_sofagh_registry"):
+    builtins._sofagh_registry = {}
+
+
+def _put(kind, data):
+    key = f"sofagh::{kind}::{len(builtins._sofagh_registry)}::{id(data)}"
+    builtins._sofagh_registry[key] = data
+    return key
+
 
 target = None
 
 if geo is not None or meshFile:
-    target = GH_ObjectWrapper({
+    target = _put("target", {
         "kind": "target",
         "geo": geo,
         "mesh_file": meshFile.strip().strip('"\'') if meshFile else None,

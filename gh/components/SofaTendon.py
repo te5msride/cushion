@@ -18,7 +18,17 @@
 # displacement values are applied raw (mm); force values follow the
 # same x dt convention as pressures (handled in the controller).
 
-from Grasshopper.Kernel.Types import GH_ObjectWrapper
+import builtins
+
+if not hasattr(builtins, "_sofagh_registry"):
+    builtins._sofagh_registry = {}
+
+
+def _put(kind, data):
+    key = f"sofagh::{kind}::{len(builtins._sofagh_registry)}::{id(data)}"
+    builtins._sofagh_registry[key] = data
+    return key
+
 
 tendon = None
 
@@ -27,7 +37,7 @@ if pts:
     vt = (valueType or "displacement").strip().lower()
     if vt not in ("displacement", "force"):
         raise ValueError("valueType must be 'displacement' or 'force'")
-    tendon = GH_ObjectWrapper({
+    tendon = _put("tendon", {
         "kind": "tendon",
         "points": [[p.X, p.Y, p.Z] for p in pts if p],
         "channel": ch,
@@ -35,3 +45,4 @@ if pts:
         "value_type": vt,
         "pull_point": [pullPoint.X, pullPoint.Y, pullPoint.Z] if pullPoint else None,
     })
+# Output is a str token (shared in-session registry) — GH-marshalling-proof.

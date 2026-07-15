@@ -42,12 +42,17 @@ if geo is not None or surface is not None or meshFile:
         mesh = ghcommon.shell_from_surface(surface, t)
         shell = mesh
 
-    from Grasshopper.Kernel.Types import GH_ObjectWrapper
-    region = GH_ObjectWrapper({
+    import builtins
+    if not hasattr(builtins, "_sofagh_registry"):
+        builtins._sofagh_registry = {}
+    _reg = builtins._sofagh_registry
+    _data = {
         "kind": "region",
         "geo": mesh,
         "mesh_file": meshFile.strip().strip('"\'') if meshFile else None,
         "name": name if name else "region",
         "young_modulus": float(E) if E else 2000.0,
         "poisson_ratio": float(nu) if nu else 0.4,
-    })
+    }
+    region = f"sofagh::region::{len(_reg)}::{id(_data)}"
+    _reg[region] = _data

@@ -8,9 +8,12 @@ them as variables.
 
 General rules:
 
-* Inputs marked **object** must have Type hint = **No Type Hint** —
-  they carry Python dicts between components (wrapped in
-  `GH_ObjectWrapper`; a str/other hint destroys them).
+* Components pass data to each other as **token strings** (e.g.
+  `sofagh::cavity::3::140...`) referencing a shared in-session registry —
+  immune to Grasshopper type marshalling. Any type hint works on these
+  inputs (`str` or none). Tokens are session-bound: after restarting
+  Rhino, recompute upstream components (the consuming component will
+  say so explicitly).
 * Every path input tolerates stray quotes/whitespace.
 * `repo` = path to the sofa-gh folder. Needed on every component that
   imports the package (Region/Scene/Run/Results) while running from
@@ -29,9 +32,9 @@ General rules:
 | nu | float | item | Poisson ratio (default 0.4) |
 | mass | float | item | total mass, kg |
 | meshSize | float | item | gmsh MeshSizeFactor (MU jvolume: 0.22) |
-| cavities | *No Type Hint* | list | from SofaCavity |
-| tendons | *No Type Hint* | list | from SofaTendon |
-| regions | *No Type Hint* | list | from SofaRegion |
+| cavities | str/none | list | from SofaCavity |
+| tendons | str/none | list | from SofaTendon |
+| regions | str/none | list | from SofaRegion |
 | fixations | Box | list | nodes inside are clamped (RestShapeSprings 1e12) |
 | monitorPts | Point3d | list | tracked points; snapped to closest mesh nodes at start; required for SofaResults trajectories |
 | collisionGeo | Geometry | item | collision surface; only wire when contact matters (costs compute) |
@@ -149,9 +152,9 @@ Outputs: `mesh` (deformed surface at that frame), `nFrames`, `time`
 
 | Input | Hint | Access | Notes |
 |---|---|---|---|
-| bodies | *No Type Hint* | list | |
-| profiles | *No Type Hint* | list | |
-| targets | *No Type Hint* | list | optional, from SofaTarget |
+| bodies | str/none | list | |
+| profiles | str/none | list | |
+| targets | str/none | list | optional, from SofaTarget |
 | camPos | Point3d | item | optional SOFA camera position |
 | camTarget | Point3d | item | optional camera look-at (both needed) |
 | projDir | str | item | output folder, local disk (one per design) |

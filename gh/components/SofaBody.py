@@ -30,7 +30,7 @@
 # Output:
 #   body       : dict, feed into SofaScene.bodies
 
-from Grasshopper.Kernel.Types import GH_ObjectWrapper
+import builtins
 
 # newer inputs are optional — script runs even if the component
 # doesn't have them yet
@@ -41,16 +41,37 @@ visualFiles = _g.get("visualFiles")
 visualFaces = _g.get("visualFaces")
 exportShape = _g.get("exportShape")
 
+if not hasattr(builtins, "_sofagh_registry"):
+    builtins._sofagh_registry = {}
 
-def _unwrap(x):
-    # upstream dicts arrive wrapped in GH_ObjectWrapper
-    return x.Value if isinstance(x, GH_ObjectWrapper) else x
+
+def _put(kind, data):
+    key = f"sofagh::{kind}::{len(builtins._sofagh_registry)}::{id(data)}"
+    builtins._sofagh_registry[key] = data
+    return key
+
+
+def _resolve(x):
+    """Token string -> dict from the shared registry (also tolerates
+    raw dicts and GH_ObjectWrapper from older component versions)."""
+    if x is None:
+        return None
+    if hasattr(x, "Value") and not isinstance(x, (str, dict)):
+        x = x.Value
+    if isinstance(x, str) and x.startswith("sofagh::"):
+        data = builtins._sofagh_registry.get(x)
+        if data is None:
+            raise ValueError(
+                "stale sofagh reference — recompute the upstream component "
+                "(the registry is per-Rhino-session; it empties on restart)")
+        return data
+    return x
 
 
 body = None
 
 if geo is not None or volumeFile:
-    body = GH_ObjectWrapper({
+    body = _put("body", {
         "kind": "body",
         "geo": geo,
         "volume_file": volumeFile.strip().strip('"\'') if volumeFile else None,
@@ -59,9 +80,9 @@ if geo is not None or volumeFile:
         "poisson_ratio": float(nu) if nu else 0.4,
         "total_mass": float(mass) if mass else 0.05,
         "mesh_size": float(meshSize) if meshSize else 1.0,
-        "cavity_defs": [_unwrap(c) for c in (cavities or []) if c],
-        "tendon_defs": [_unwrap(t) for t in (tendons or []) if t],
-        "region_defs": [_unwrap(r) for r in (regions or []) if r],
+        "cavity_defs": [_resolve(c) for c in (cavities or []) if c],
+        "tendon_defs": [_resolve(t) for t in (tendons or []) if t],
+        "region_defs": [_resolve(r) for r in (regions or []) if r],
         "fixation_boxes": [b for b in (fixations or []) if b],
         "monitor_points": [[p.X, p.Y, p.Z] for p in (monitorPts or []) if p],
         "collision_geo": collisionGeo,

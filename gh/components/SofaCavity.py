@@ -4,22 +4,34 @@
 # Inputs (right-click each input -> Type hint):
 #   geo      : Mesh/Brep — closed cavity surface              [item, Geometry]
 #   meshFile : str — OR path to an existing closed .stl       [item, str]
-#              (skips export; use for pre-made meshes like the
-#               Monolithic Unit cavity1.stl/cavity2.stl)
 #   channel  : int — column in input.csv driving this cavity  [item, int]
 #   name     : str — optional, defaults to "cavity_<channel>" [item, str]
 # Output:
-#   cavity   : dict (wrapped), feed into SofaBody.cavities
+#   cavity   : str token, feed into SofaBody.cavities
+#
+# Data passes between sofa-gh components as token strings referencing a
+# shared in-session registry — immune to Grasshopper type marshalling.
+# Type hint on consuming inputs no longer matters (str or none, both fine).
 
-from Grasshopper.Kernel.Types import GH_ObjectWrapper
+import builtins
 
 meshFile = globals().get("meshFile")
+
+if not hasattr(builtins, "_sofagh_registry"):
+    builtins._sofagh_registry = {}
+
+
+def _put(kind, data):
+    key = f"sofagh::{kind}::{len(builtins._sofagh_registry)}::{id(data)}"
+    builtins._sofagh_registry[key] = data
+    return key
+
 
 cavity = None
 
 if geo is not None or meshFile:
     ch = int(channel) if channel is not None else 1
-    cavity = GH_ObjectWrapper({
+    cavity = _put("cavity", {
         "kind": "cavity",
         "geo": geo,
         "mesh_file": meshFile.strip().strip('"\'') if meshFile else None,
