@@ -23,6 +23,8 @@
 
 import sys
 
+meshFile = globals().get("meshFile")
+
 shell = None
 region = None
 

@@ -32,6 +32,15 @@
 
 from Grasshopper.Kernel.Types import GH_ObjectWrapper
 
+# newer inputs are optional — script runs even if the component
+# doesn't have them yet
+_g = globals()
+volumeFile = _g.get("volumeFile")
+tendons = _g.get("tendons")
+visualFiles = _g.get("visualFiles")
+visualFaces = _g.get("visualFaces")
+exportShape = _g.get("exportShape")
+
 
 def _unwrap(x):
     # upstream dicts arrive wrapped in GH_ObjectWrapper

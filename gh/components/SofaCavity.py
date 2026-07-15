@@ -13,6 +13,8 @@
 
 from Grasshopper.Kernel.Types import GH_ObjectWrapper
 
+meshFile = globals().get("meshFile")
+
 cavity = None
 
 if geo is not None or meshFile:

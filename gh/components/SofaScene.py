@@ -31,6 +31,17 @@
 import os
 import sys
 
+# newer inputs are optional — script runs even if the component
+# doesn't have them yet (add them to use the feature)
+_g = globals()
+targets = _g.get("targets")
+camPos = _g.get("camPos")
+camTarget = _g.get("camTarget")
+viewFile = _g.get("viewFile")
+floorZ = _g.get("floorZ")
+floorSize = _g.get("floorSize")
+contactRules = _g.get("contactRules")
+
 scenePath = None
 info = "set write=True"
 

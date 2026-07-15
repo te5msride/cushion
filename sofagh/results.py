@@ -15,14 +15,18 @@ def read_monitor(project_dir, body_name):
     if not os.path.isfile(path):
         raise FileNotFoundError(path)
     times, frames = [], []
-    with open(path) as f:
+    with open(path, errors="replace") as f:
         for line in f:
-            line = line.strip()
+            # NUL bytes appear when a run is killed mid-write
+            line = line.replace("\x00", "").strip()
             if not line or line.startswith("#"):
                 continue
-            vals = [float(v) for v in line.split()]
+            try:
+                vals = [float(v) for v in line.split()]
+            except ValueError:
+                continue  # corrupted row
             t, coords = vals[0], vals[1:]
-            if len(coords) % 3 != 0:
+            if not coords or len(coords) % 3 != 0:
                 continue  # truncated row (sim killed mid-write)
             times.append(t)
             frames.append([(coords[i], coords[i + 1], coords[i + 2])
@@ -39,12 +43,15 @@ def read_pressures(project_dir):
     if not os.path.isfile(path):
         raise FileNotFoundError(path)
     times, rows = [], []
-    with open(path) as f:
+    with open(path, errors="replace") as f:
         for line in f:
-            line = line.strip()
+            line = line.replace("\x00", "").strip()
             if not line:
                 continue
-            vals = [float(v) for v in line.split(",")]
+            try:
+                vals = [float(v) for v in line.split(",")]
+            except ValueError:
+                continue  # corrupted row
             times.append(vals[0])
             rows.append(vals[1:])
     n = max((len(r) for r in rows), default=0)
