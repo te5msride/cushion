@@ -153,10 +153,21 @@ if write and bodies and projDir:
         })
 
     spec_targets = []
-    for tg in (targets or []):
+    for ti, tg in enumerate(targets or []):
         tg = _unwrap(tg)
         if not tg:
             continue
+        if isinstance(tg, str):
+            # convenience: a bare .stl path counts as a simple target
+            path = tg.strip().strip('"\'')
+            if os.path.isfile(path) and path.lower().endswith(".stl"):
+                stem = os.path.splitext(os.path.basename(path))[0]
+                tg = {"name": f"target_{stem}", "mesh_file": path, "mass": 0.01}
+            else:
+                raise TypeError(
+                    f"targets item {ti} is a string but not an existing .stl "
+                    f"path: {path!r}. Wire SofaTarget outputs (or valid .stl "
+                    "paths) into targets, with Type hint = No Type Hint.")
         if not isinstance(tg, dict):
             raise TypeError(
                 f"targets input received {type(tg).__name__} instead of a dict — "
