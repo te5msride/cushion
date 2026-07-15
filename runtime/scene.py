@@ -156,11 +156,17 @@ def _add_body(rootNode, body, spec):
                     mapForces=False, mapMasses=False)
 
     # Tendons/cables (SoftRobots CableConstraint, points mapped into volume)
+    # per-channel colors, same palette as docs: 1 red, 2 green, 3 blue,
+    # 4 yellow, 5 magenta, 6 cyan (repeats after 6)
+    palette = [[0.9, 0.15, 0.15, 1.0], [0.15, 0.8, 0.15, 1.0],
+               [0.15, 0.3, 0.9, 1.0], [0.9, 0.8, 0.1, 1.0],
+               [0.85, 0.2, 0.85, 1.0], [0.1, 0.8, 0.8, 1.0]]
     for cable in body.get("cables", []):
+        color = palette[(int(cable.get("channel", 1)) - 1) % len(palette)]
         c = b.addChild(cable["name"])
         c.addObject("MechanicalObject", position=cable["points"],
-                    showObject=True, showObjectScale=5, drawMode=1,
-                    showColor=[0.9, 0.2, 0.2, 1.0])
+                    showObject=True, showObjectScale=2.5, drawMode=1,
+                    showColor=color)
         kwargs = dict(name="CableConstraint",
                       indices=list(range(len(cable["points"]))),
                       value=0.0,
