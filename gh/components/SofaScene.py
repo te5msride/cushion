@@ -146,7 +146,11 @@ if write and bodies and projDir:
                             "poisson_ratio": r["poisson_ratio"]})
 
         collision_mesh = None
-        if bd.get("collision_geo") is not None:
+        if bd.get("collision_file"):
+            collision_mesh = bd["collision_file"]
+            if not os.path.isfile(collision_mesh):
+                raise FileNotFoundError(f"{bname}: collisionFile not found: {collision_mesh}")
+        elif bd.get("collision_geo") is not None:
             collision_mesh = ghcommon.write_stl(
                 bd["collision_geo"], os.path.join(mesh_dir, f"{bname}_collision.stl"))
 

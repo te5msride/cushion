@@ -38,6 +38,7 @@ General rules:
 | fixations | Box | list | nodes inside are clamped (RestShapeSprings 1e12) |
 | monitorPts | Point3d | list | tracked points; snapped to closest mesh nodes at start; required for SofaResults trajectories |
 | collisionGeo | Geometry | item | collision surface; only wire when contact matters (costs compute) |
+| collisionFile | str | item | OR existing collision `.stl` path |
 | visualGeo | Geometry | list | display-only surfaces (e.g. lattice), barycentric-mapped |
 | visualFiles | str | list | display-only `.stl` paths, used as-is |
 | visualFaces | int | item | decimate visualGeo to this face count on export (0 = off) |
@@ -61,12 +62,20 @@ SurfacePressureConstraint expects is handled by the controller.
 | Input | Hint | Access | Notes |
 |---|---|---|---|
 | pts | Point3d | list | ordered routing points, all inside the body (Divide Curve → pts) |
+| ptsFile | str | item | OR JSON `[[x,y,z],...]` path (LETIAS `interpolated_trunk_cable_N.json`) |
 | channel | int | item | input.csv column |
 | name | str | item | default `cable_<channel>` |
 | valueType | str | item | `displacement` (mm, default) or `force` (mN) |
 | pullPoint | Point3d | item | optional external anchor (motor/pulley) |
 
-Output: `tendon` (object).
+Outputs: `tendon` (token), `pathPts` (routing points, preview).
+
+Control: same PressureProfile/channel system as cavities — `valueType`
+decides interpretation (displacement mm, applied raw; force mN, ×dt like
+pressures). Multi-cable systems: use `force` (simultaneous displacement
+control of coupled cables fights the constraint solver — LETIAS note).
+Telemetry: every run writes `output/cables.csv` (displacement + force
+per cable per step) — read back via SofaResults `cableDisp`/`cableForce`.
 
 ## SofaRegion — locally stiffened sub-region
 
@@ -194,7 +203,8 @@ Output: `status` (str). Log written to `<projDir>/runsofa.log`.
 
 Outputs: `info` (read first), `times`, `points` (DataTree — branch per
 frame, items = tracked points), `lastPts` (final frame), `pTimes`,
-`pressures` (DataTree — branch per channel).
+`pressures` (DataTree — branch per channel), and when tendons exist:
+`cableNames`, `cableDisp` (mm), `cableForce` (mN) — branch per cable.
 
 Typical use: `points` → Tree Branch + slider = scrub motion; Flip
 Matrix → Polyline = trajectories; `pressures` → Quick Graph.

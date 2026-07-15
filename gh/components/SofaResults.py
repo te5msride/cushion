@@ -13,6 +13,9 @@
 #   lastPts   : list of Point3d — final frame (quick preview)
 #   pTimes    : list of float — actuation sample times
 #   pressures : DataTree of float — branch {k} = channel k history
+#   cableNames: list of str — cable names (body.cable), if any tendons
+#   cableDisp : DataTree of float — branch {k} = cable k displacement, mm
+#   cableForce: DataTree of float — branch {k} = cable k force, mN
 
 import os
 import sys
@@ -26,6 +29,9 @@ points = DataTree[rg.Point3d]()
 lastPts = []
 pTimes = []
 pressures = DataTree[float]()
+cableNames = []
+cableDisp = DataTree[float]()
+cableForce = DataTree[float]()
 info = "wire scenePath (from SofaScene, needs write=True) and bodyName"
 
 if scenePath and bodyName:
@@ -69,5 +75,12 @@ if scenePath and bodyName:
         lines.append(f"output.csv: {len(pT)} samples, {len(channels)} channels")
     else:
         lines.append(f"no output.csv yet ({out})")
+
+    if os.path.isfile(os.path.join(proj, "output", "cables.csv")):
+        cableNames, cT, disp, force = results.read_cables(proj)
+        for k in range(len(cableNames)):
+            cableDisp.AddRange(disp[k], GH_Path(k))
+            cableForce.AddRange(force[k], GH_Path(k))
+        lines.append(f"cables.csv: {len(cableNames)} cables, {len(cT)} samples")
 
     info = "\n".join(lines)

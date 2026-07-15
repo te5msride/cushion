@@ -68,6 +68,7 @@ class PressureScheduleController(Sofa.Core.Controller):
                     "constraint": getattr(body_node, cable["name"]).CableConstraint,
                     "channel": int(cable["channel"]),
                     "kind": "cable", "scale_dt": is_force,
+                    "name": f"{body['name']}.{cable['name']}",
                     "unit": "mN" if is_force else "mm"})
             if body.get("monitor_points"):
                 monitor = getattr(body_node, "monitor_" + body["name"])
@@ -79,6 +80,16 @@ class PressureScheduleController(Sofa.Core.Controller):
             self.out_csv = os.path.join(self.here, "output", "output.csv")
             if os.path.exists(self.out_csv):
                 os.remove(self.out_csv)
+            # cable telemetry: displacement + force per cable per step
+            self.cables = [a for a in self.actuators if a["kind"] == "cable"]
+            self.cables_csv = os.path.join(self.here, "output", "cables.csv")
+            if os.path.exists(self.cables_csv):
+                os.remove(self.cables_csv)
+            if self.cables:
+                with open(self.cables_csv, "w", newline="") as f:
+                    names = [a["name"] for a in self.cables]
+                    f.write("# time," + ",".join(
+                        f"{n}_disp_mm,{n}_force_mN" for n in names) + "\n")
 
         summary = [f"ch{a['channel']}:{a['kind']}" for a in self.actuators]
         print(f"[sofagh] actuators: {summary}, duration: {self.duration:.2f} s")
@@ -124,6 +135,13 @@ class PressureScheduleController(Sofa.Core.Controller):
             with open(self.out_csv, "a", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow([t] + [measured.get(c, 0.0) for c in self.channels])
+            if self.cables:
+                row = [t]
+                for a in self.cables:
+                    row.append(float(a["constraint"].displacement.value))
+                    row.append(float(a["constraint"].force.value) / dt)
+                with open(self.cables_csv, "a", newline="") as f:
+                    csv.writer(f).writerow(row)
 
         if t > self.duration:
             print("[sofagh] schedule complete, stopping animation")

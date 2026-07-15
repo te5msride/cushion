@@ -18,6 +18,7 @@
 #   fixations  : list of Box — nodes inside are clamped               [list, Box]
 #   monitorPts : list of Point3d — tracked points (Monitor export)    [list, Point3d]
 #   collisionGeo : Mesh — collision surface (optional; enables contact) [item, Geometry]
+#   collisionFile : str — OR path to an existing collision .stl         [item, str]
 #   visualGeo  : list of Mesh — display surfaces (e.g. lattice)       [list, Geometry]
 #   visualFiles : list of str — OR paths to existing .stl files       [list, str]
 #                 (e.g. lattice.stl; used as-is, no export)
@@ -40,6 +41,7 @@ tendons = _g.get("tendons")
 visualFiles = _g.get("visualFiles")
 visualFaces = _g.get("visualFaces")
 exportShape = _g.get("exportShape")
+collisionFile = _g.get("collisionFile")
 
 if not hasattr(builtins, "_sofagh_registry"):
     builtins._sofagh_registry = {}
@@ -86,6 +88,7 @@ if geo is not None or volumeFile:
         "fixation_boxes": [b for b in (fixations or []) if b],
         "monitor_points": [[p.X, p.Y, p.Z] for p in (monitorPts or []) if p],
         "collision_geo": collisionGeo,
+        "collision_file": collisionFile.strip().strip('"\'') if collisionFile else None,
         "visual_geos": [v for v in (visualGeo or []) if v],
         "visual_files": [f.strip().strip('"\'') for f in (visualFiles or []) if f],
         "visual_faces": int(visualFaces) if visualFaces else 0,

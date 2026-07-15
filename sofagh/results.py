@@ -59,6 +59,39 @@ def read_pressures(project_dir):
     return times, channels
 
 
+def read_cables(project_dir):
+    """Parse output/cables.csv.
+
+    Returns (names, times, disp, force): disp[k]/force[k] = history of
+    cable k (mm / mN), names from the header comment.
+    """
+    path = os.path.join(project_dir, "output", "cables.csv")
+    if not os.path.isfile(path):
+        raise FileNotFoundError(path)
+    names, times, rows = [], [], []
+    with open(path, errors="replace") as f:
+        for line in f:
+            line = line.replace("\x00", "").strip()
+            if not line:
+                continue
+            if line.startswith("#"):
+                cols = [c.strip() for c in line.lstrip("# ").split(",")][1:]
+                names = [c[:-len("_disp_mm")] for c in cols if c.endswith("_disp_mm")]
+                continue
+            try:
+                vals = [float(v) for v in line.split(",")]
+            except ValueError:
+                continue
+            times.append(vals[0])
+            rows.append(vals[1:])
+    n = len(names) or (max((len(r) for r in rows), default=0) // 2)
+    disp = [[r[2 * k] if 2 * k < len(r) else 0.0 for r in rows] for k in range(n)]
+    force = [[r[2 * k + 1] if 2 * k + 1 < len(r) else 0.0 for r in rows] for k in range(n)]
+    if not names:
+        names = [f"cable{k + 1}" for k in range(n)]
+    return names, times, disp, force
+
+
 def list_shape_frames(project_dir, body_name):
     """Sorted list of VTKExporter frame files for a body ([] if none)."""
     import glob
