@@ -87,7 +87,7 @@ mapped), never meshed or simulated.
 ```
 sofagh/          pure-Python core (no Rhino): meshing, project writer,
                  runner, results parsers — also usable from plain Python
-runtime/         generic SOFA scene + controller (copied into projects)
+sofagh/runtime/         generic SOFA scene + controller (copied into projects)
 gh/ghcommon.py   RhinoCommon helpers (STL/STEP export, shell offset)
 gh/components/   the Grasshopper component scripts
 docs/            install, component reference, troubleshooting

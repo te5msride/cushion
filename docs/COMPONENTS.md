@@ -193,7 +193,7 @@ Outputs: `mesh` (deformed surface at that frame), `nFrames`, `time`
 | write | bool | item | toggle True to (re)write |
 
 Outputs: `scenePath` (str), `info` (str — read it). Writes
-`meshes/`, `scene.json`, `input.csv`, copies `runtime/scene.py` +
+`meshes/`, `scene.json`, `input.csv`, copies `sofagh/runtime/scene.py` +
 `controller.py`. Note: `scenePath` is only emitted while `write` is
 True.
 

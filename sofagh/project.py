@@ -24,8 +24,7 @@ import shutil
 from . import inputs as _inputs
 from . import meshing as _meshing
 
-RUNTIME_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                           "runtime")
+RUNTIME_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "runtime")
 
 DEFAULTS = {
     "dt": 0.01,
