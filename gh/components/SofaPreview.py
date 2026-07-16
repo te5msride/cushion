@@ -34,7 +34,15 @@ tendonCrvs, tendonChs = [], []
 info = "wire scenePath (SofaScene, write=True)"
 
 
-def _mesh(points, faces):
+_skipped = []
+
+
+def _mesh(points, faces, label=""):
+    """Build a Rhino mesh; return None (and record why) if degenerate —
+    invalid meshes crash Grasshopper's output marshalling."""
+    if len(points) < 3 or len(faces) < 1:
+        _skipped.append(f"{label}: empty ({len(points)} pts, {len(faces)} faces)")
+        return None
     m = rg.Mesh()
     for x, y, z in points:
         m.Vertices.Add(x, y, z)
@@ -43,7 +51,15 @@ def _mesh(points, faces):
     m.Vertices.CombineIdentical(True, True)
     m.Normals.ComputeNormals()
     m.Compact()
+    if not m.IsValid:
+        _skipped.append(f"{label}: mesh invalid after build")
+        return None
     return m
+
+
+def _keep(seq, m):
+    if m is not None:
+        seq.append(m)
 
 
 try:
@@ -71,11 +87,14 @@ try:
             for body in spec.get("bodies", []):
                 if body.get("volume_vtk"):
                     pts_, tets = meshload.read_vtk(_abs(body["volume_vtk"]))
-                    volumes.append(_mesh(pts_, results.boundary_triangles(tets)))
+                    _keep(volumes, _mesh(pts_, results.boundary_triangles(tets),
+                                         body["volume_vtk"]))
                 for c in body.get("cavities", []):
-                    cavities.append(_mesh(*meshload.read_stl(_abs(c["mesh"]))))
+                    _keep(cavities, _mesh(*meshload.read_stl(_abs(c["mesh"])),
+                                          label=c["mesh"]))
                 for r in body.get("regions", []):
-                    regions.append(_mesh(*meshload.read_stl(_abs(r["mesh"]))))
+                    _keep(regions, _mesh(*meshload.read_stl(_abs(r["mesh"])),
+                                         label=r["mesh"]))
                 for cable in body.get("cables", []):
                     cpts = [rg.Point3d(p[0], p[1], p[2])
                             for p in cable.get("points", [])]
@@ -100,10 +119,13 @@ try:
                               f"reg {len(body.get('regions', []))}")
 
             for t in spec.get("targets", []):
-                targets.append(_mesh(*meshload.read_stl(_abs(t["mesh"]))))
+                _keep(targets, _mesh(*meshload.read_stl(_abs(t["mesh"])),
+                                     label=t["mesh"]))
 
             info = ("; ".join(counts)
                     + (f"; tendons {len(tendonCrvs)}" if tendonCrvs else "")
                     + (f"; targets {len(targets)}" if targets else ""))
+            if _skipped:
+                info += "\nSKIPPED (bad mesh files):\n" + "\n".join(_skipped)
 except Exception:
     info = "SofaPreview failed:\n" + traceback.format_exc()
