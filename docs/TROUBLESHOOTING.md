@@ -27,6 +27,14 @@ Stuck: check internet/proxy or install manually:
 `~/.rhinocode/py39-rh8/python3.9 -m pip install gmsh` (path analogous
 on Windows), restart component.
 
+**`dlsym(RTLD_DEFAULT, gmshInitialize): symbol not found` (macOS)**
+Interrupted `# r: gmsh` install: the Python half landed, the ~80 MB
+native dylib didn't. Fix from Terminal (Rhino closed):
+`~/.rhinocode/py39-rh8/python3.9 -m pip install --force-reinstall gmsh`,
+then verify `.../python3.9 -c "import gmsh; gmsh.initialize()"`. If a
+site-env copy exists under `~/.rhinocode/py39-rh8/site-envs/`, copy
+`lib/libgmsh.*.dylib` next to it (one level above the site-env folder).
+
 **Changes to sofagh/*.py not taking effect**
 Python module cache. Restart Rhino after editing package files
 (component scripts re-paste live; package files don't).
