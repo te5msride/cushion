@@ -119,6 +119,7 @@ def _add_body(rootNode, body, spec):
 
     # Full deformed-shape export (legacy VTK series, read back by SofaShape)
     if body.get("export_shape"):
+        os.makedirs(os.path.join(HERE, "shape"), exist_ok=True)
         b.addObject("VTKExporter",
                     filename=os.path.join(HERE, "shape", body["name"]),
                     listening=True, XMLformat=False, overwrite=False,
