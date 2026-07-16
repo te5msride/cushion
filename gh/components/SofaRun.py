@@ -8,6 +8,9 @@
 #               (optional if SOFA_ROOT env var is set)
 #   repo      : str — path to the sofa-gh folder              [item, str]
 #   gui       : bool — True: interactive window; False: batch [item, bool]
+#   winRect   : list of 4 ints — x, y, width, height to place [list, int]
+#               the SOFA window (Windows only; e.g. 0,600,900,700
+#               = bottom-left tile). Empty = wherever Qt puts it.
 #   run       : bool — set True to launch                     [item, bool]
 # Outputs:
 #   status    : str
@@ -16,6 +19,8 @@
 # GUI runs return immediately (detached window); press Animate in SOFA.
 
 import sys
+
+winRect = globals().get("winRect")
 
 status = "set run=True"
 
@@ -31,8 +36,9 @@ if run and scenePath:
     from sofagh import runner
 
     use_gui = True if gui is None else bool(gui)
+    rect = [int(v) for v in winRect] if winRect and len(winRect) == 4 else None
     rc, log = runner.run(scenePath, sofa_root=sofaRoot or None,
-                         gui=use_gui, blocking=not use_gui)
+                         gui=use_gui, blocking=not use_gui, window=rect)
     if rc is None:
         status = f"runSofa launched (GUI). Log: {log}"
     elif rc == 0:

@@ -65,12 +65,47 @@ def _sofa_env(sofa_root):
     return env
 
 
+def place_sofa_window(rect, timeout=15.0):
+    """Move the runSofa window to rect=(x, y, w, h). Windows only;
+    polls in a daemon thread until the window appears."""
+    if os.name != "nt":
+        return  # macOS needs Accessibility permission; not supported
+
+    import ctypes
+    import threading
+    import time as _time
+    user32 = ctypes.windll.user32
+
+    def _find_and_move():
+        deadline = _time.time() + timeout
+        while _time.time() < deadline:
+            found = []
+
+            @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+            def _enum(hwnd, _):
+                buf = ctypes.create_unicode_buffer(256)
+                user32.GetWindowTextW(hwnd, buf, 256)
+                if buf.value.startswith("SOFA v") and user32.IsWindowVisible(hwnd):
+                    found.append(hwnd)
+                return True
+
+            user32.EnumWindows(_enum, None)
+            if found:
+                x, y, w, h = [int(v) for v in rect]
+                user32.MoveWindow(found[0], x, y, w, h, True)
+                return
+            _time.sleep(0.5)
+
+    threading.Thread(target=_find_and_move, daemon=True).start()
+
+
 def run(scene_path, sofa_root=None, gui=True, n_steps=None, blocking=True,
-        log_path=None):
+        log_path=None, window=None):
     """Launch runSofa on scene_path.
 
     gui=True  -> interactive window (design/debug).
     gui=False -> batch mode, n_steps taken from scene.json if not given.
+    window    -> optional (x, y, w, h) to place the GUI window (Windows).
     Returns (returncode_or_None, log_path). returncode None if non-blocking.
     """
     scene_path = os.path.abspath(scene_path)
@@ -97,6 +132,8 @@ def run(scene_path, sofa_root=None, gui=True, n_steps=None, blocking=True,
     logf = open(log_path, "w")
     proc = subprocess.Popen(cmd, cwd=project_dir, env=_sofa_env(sofa_root),
                             stdout=logf, stderr=subprocess.STDOUT)
+    if gui and window:
+        place_sofa_window(window)
     if not blocking:
         return None, log_path
     proc.wait()
