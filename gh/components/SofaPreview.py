@@ -100,7 +100,8 @@ try:
                             for p in cable.get("points", [])]
                     pp = cable.get("pull_point")
                     if pp:
-                        cpts.append(rg.Point3d(pp[0], pp[1], pp[2]))
+                        # SoftRobots pulls from the FIRST cable point
+                        cpts.insert(0, rg.Point3d(pp[0], pp[1], pp[2]))
                     if len(cpts) >= 2:
                         pl = rg.Polyline()
                         for q in cpts:
