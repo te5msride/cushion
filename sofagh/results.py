@@ -93,24 +93,30 @@ def read_cables(project_dir):
 
 
 def list_shape_frames(project_dir, body_name):
-    """Sorted list of VTKExporter frame files for a body ([] if none)."""
+    """Sorted list of VTKExporter frame files for a body ([] if none).
+
+    SOFA writes legacy .vtk or XML .vtu depending on version/flags —
+    accept both.
+    """
     import glob
     import re
-    pattern = os.path.join(project_dir, "shape", body_name + "*.vtk")
-    files = glob.glob(pattern)
+    base = os.path.join(project_dir, "shape", body_name)
+    files = glob.glob(base + "*.vtk") + glob.glob(base + "*.vtu")
 
     def framekey(p):
-        m = re.search(r"(\d+)\.vtk$", os.path.basename(p))
+        m = re.search(r"(\d+)\.(vtk|vtu)$", os.path.basename(p))
         return int(m.group(1)) if m else -1
 
     return sorted(files, key=framekey)
 
 
 def read_vtk_frame(path):
-    """Parse a legacy ASCII VTK unstructured grid (VTKExporter output).
+    """Parse a VTKExporter frame: legacy ASCII .vtk or XML .vtu.
 
     Returns (points, tetras): points = [(x,y,z)...], tetras = [(a,b,c,d)...]
     """
+    if path.lower().endswith(".vtu"):
+        return _read_vtu(path)
     points, tetras = [], []
     with open(path) as f:
         tokens = f.read().split()
@@ -137,6 +143,47 @@ def read_vtk_frame(path):
             i = j
         else:
             i += 1
+    return points, tetras
+
+
+def _read_vtu(path):
+    """XML VTK unstructured grid (ascii DataArrays, as SOFA writes)."""
+    import xml.etree.ElementTree as ET
+    root = ET.parse(path).getroot()
+    piece = root.find(".//Piece")
+    if piece is None:
+        raise ValueError(f"no <Piece> in {path}")
+
+    def _floats(el):
+        return [float(v) for v in el.text.split()] if el is not None and el.text else []
+
+    def _ints(el):
+        return [int(float(v)) for v in el.text.split()] if el is not None and el.text else []
+
+    pts_el = piece.find("Points/DataArray")
+    vals = _floats(pts_el)
+    points = [(vals[i], vals[i + 1], vals[i + 2])
+              for i in range(0, len(vals) - 2, 3)]
+
+    cells = piece.find("Cells")
+    conn, offsets, types = [], [], []
+    if cells is not None:
+        for da in cells.findall("DataArray"):
+            name = (da.get("Name") or "").lower()
+            if name == "connectivity":
+                conn = _ints(da)
+            elif name == "offsets":
+                offsets = _ints(da)
+            elif name == "types":
+                types = _ints(da)
+
+    tetras = []
+    start = 0
+    for i, off in enumerate(offsets):
+        n = off - start
+        if n == 4 and (not types or types[i] == 10):  # VTK_TETRA
+            tetras.append(tuple(conn[start:off]))
+        start = off
     return points, tetras
 
 
