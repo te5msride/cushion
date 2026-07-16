@@ -37,13 +37,16 @@ def volume_mesh(input_path, output_path=None, mesh_size=1.0, algorithm3d=1,
                 gmsh.model.occ.fragment([(3, e[1]) for e in entities], [])
                 gmsh.model.occ.synchronize()
         elif ext == ".stl":
+            # Direct route: weld the triangle soup, keep the original
+            # triangulation as the volume boundary (no surface
+            # reparametrization — that route fails on many STLs with
+            # "Invalid exterior boundary mesh for parametrization").
             gmsh.merge(input_path)
-            # Reclassify the triangulation into surfaces, then close a volume.
-            import math
-            gmsh.model.mesh.classifySurfaces(math.radians(45), True, False,
-                                             math.radians(180))
-            gmsh.model.mesh.createGeometry()
+            gmsh.model.mesh.removeDuplicateNodes()
+            gmsh.model.mesh.createTopology()
             surfaces = gmsh.model.getEntities(2)
+            if not surfaces:
+                raise ValueError("no surface found in STL")
             loop = gmsh.model.geo.addSurfaceLoop([s[1] for s in surfaces])
             gmsh.model.geo.addVolume([loop])
             gmsh.model.geo.synchronize()
