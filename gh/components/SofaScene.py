@@ -189,6 +189,7 @@ if write and bodies and projDir:
             "regions": regions,
             "collision_mesh": collision_mesh,
             "visuals": visuals,
+            "export_shape": int(bd.get("export_shape", 0)),
         })
 
     spec_targets = []
