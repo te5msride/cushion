@@ -63,9 +63,9 @@ for interior coverage if wanted.
 2. Tip cloud: `List Item` (index −1) on each branch — e.g. `Flip Matrix`
    → last branch, or `Tree Statistics` + `Tree Branch`. Preview as
    point cloud.
-3. `WorkspaceHull` (new component, gh/components/WorkspaceHull.py):
-   tip points → hull mesh + volume (mm³). Backbone cloud (flattened
-   `points`) through a second WorkspaceHull gives the swept-body bound.
+3. Convex hull of the tip cloud (native GH hull component):
+   hull mesh + volume. Backbone cloud (flattened `points`) hulled
+   separately gives the swept-body bound.
 4. `cableForce` / `cableDisp` → Quick Graph: commanded cosine lobes
    should appear in force; displacement shows the resulting shortening.
 
