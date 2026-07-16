@@ -45,6 +45,14 @@ contactRules = _g.get("contactRules")
 scenePath = None
 info = "set write=True"
 
+if not write and projDir:
+    # keep downstream (SofaRun/Results/Shape/Preview) fed with the last
+    # written project even while write is toggled off
+    _p = os.path.join(projDir.strip().strip('"\''), "scene.py")
+    if os.path.isfile(_p):
+        scenePath = _p
+        info = "write=False — passing through existing project"
+
 if write and bodies and projDir:
     projDir = projDir.strip().strip('"\'')
     # repo path only needed in prototype mode; published .gha bundles
