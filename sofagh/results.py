@@ -115,7 +115,11 @@ def read_vtk_frame(path):
 
     Returns (points, tetras): points = [(x,y,z)...], tetras = [(a,b,c,d)...]
     """
-    if path.lower().endswith(".vtu"):
+    # dispatch on content, not extension — SOFA names legacy-format
+    # files .vtu when exporting a series
+    with open(path, "rb") as f:
+        head = f.read(64).lstrip()
+    if head.startswith(b"<"):
         return _read_vtu(path)
     points, tetras = [], []
     with open(path) as f:
