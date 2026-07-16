@@ -77,6 +77,23 @@ control of coupled cables fights the constraint solver — LETIAS note).
 Telemetry: every run writes `output/cables.csv` (displacement + force
 per cable per step) — read back via SofaResults `cableDisp`/`cableForce`.
 
+## SofaTendons / SofaProfiles — multi-channel variants
+
+Same as SofaTendon/PressureProfile but one component drives N channels
+via **tree-access** inputs (right-click input → Access → Tree):
+
+* `SofaTendons`: `pts` tree, one branch per tendon (don't flatten a
+  Divide Curve over a list of curves — its output is already the right
+  tree); `channels` list optional (default 1..N); one `valueType` for
+  all; `pullPoints` list matched by index. Output `tendons` = list →
+  SofaBody.tendons directly, no Merge.
+* `SofaProfiles`: `values` tree (branch per channel), `times` tree
+  (single branch = shared timeline), `channels` list optional. Output
+  `profiles` = list → SofaScene.profiles.
+
+Per-component variants stay available; plural ones keep the canvas
+compact for 3+ channels.
+
 ## SofaRegion — locally stiffened sub-region
 
 Three definition modes: ready closed mesh (`geo`), auto-shell
