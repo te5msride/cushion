@@ -29,6 +29,7 @@ info = "wire scenePath + bodyName; needs exportShape set on SofaBody"
 if scenePath and bodyName:
     scenePath = scenePath.strip().strip('"\'')
     bodyName = bodyName.strip()
+    repo = repo or __import__("os").environ.get("SOFAGH_ROOT")
     if repo:
         repo = repo.strip().strip('"\'').rstrip("\\/")
         if repo not in sys.path:

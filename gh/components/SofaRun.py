@@ -23,6 +23,7 @@ if run and scenePath:
     scenePath = scenePath.strip().strip('"\'')
     if sofaRoot:
         sofaRoot = sofaRoot.strip().strip('"\'').rstrip("\\/")
+    repo = repo or __import__("os").environ.get("SOFAGH_ROOT")
     if repo:
         repo = repo.strip().strip('"\'').rstrip("\\/")
         if repo not in sys.path:

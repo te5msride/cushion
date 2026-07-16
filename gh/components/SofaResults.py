@@ -37,6 +37,7 @@ info = "wire scenePath (from SofaScene, needs write=True) and bodyName"
 if scenePath and bodyName:
     scenePath = scenePath.strip().strip('"\'')
     bodyName = bodyName.strip()
+    repo = repo or __import__("os").environ.get("SOFAGH_ROOT")
     if repo:
         repo = repo.strip().strip('"\'').rstrip("\\/")
         if repo not in sys.path:

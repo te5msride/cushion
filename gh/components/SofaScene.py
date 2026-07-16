@@ -49,6 +49,7 @@ if write and bodies and projDir:
     projDir = projDir.strip().strip('"\'')
     # repo path only needed in prototype mode; published .gha bundles
     # ghcommon + sofagh in the project's Shared folder.
+    repo = repo or __import__("os").environ.get("SOFAGH_ROOT")
     if repo:
         repo = repo.strip().strip('"\'').rstrip("\\/")
         for p in (repo, os.path.join(repo, "gh")):

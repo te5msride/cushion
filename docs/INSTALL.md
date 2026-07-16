@@ -12,8 +12,10 @@ a local `runSofa`).
    already contains the required plugins: `SofaPython3`, `SoftRobots`,
    `STLIB`, `SofaValidation`, `MultiThreading`. Verify they exist in
    `<SOFA>/plugins/`.
-3. **This repository**, anywhere readable. All `repo` inputs on the
-   components point at this folder.
+3. **This repository**, anywhere readable. Either wire its path into
+   the components' `repo` inputs, or set the **`SOFAGH_ROOT`**
+   environment variable to it once (then `repo` inputs can stay empty).
+   Similarly `SOFA_ROOT` replaces the `sofaRoot` input on SofaRun.
 4. **gmsh** is installed automatically into Rhino's own CPython by the
    `# r: gmsh` directive in SofaScene on first run (needs internet,
    1–3 min, ~90 MB, once per machine). No system install needed.

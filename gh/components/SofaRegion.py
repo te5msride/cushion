@@ -28,6 +28,7 @@ meshFile = globals().get("meshFile")
 shell = None
 region = None
 
+repo = repo or __import__("os").environ.get("SOFAGH_ROOT")
 if repo:
     repo = repo.strip().strip('"\'').rstrip("\\/")
     for _p in (repo, repo + "/gh"):

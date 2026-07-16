@@ -16,6 +16,8 @@
 #   cavities  : list of Mesh
 #   regions   : list of Mesh
 #   targets   : list of Mesh
+#   tendonCrvs: list of Polyline — cable routing paths
+#   tendonChs : list of int — channel per tendon (Text Tag the start points)
 #   monitorPts: list of Point3d
 #   fixBoxes  : list of Box
 #   info      : str
@@ -27,6 +29,7 @@ import sys
 import Rhino.Geometry as rg
 
 volumes, cavities, regions, targets, monitorPts, fixBoxes = [], [], [], [], [], []
+tendonCrvs, tendonChs = [], []
 info = "wire scenePath (SofaScene, write=True)"
 
 
@@ -44,6 +47,7 @@ def _mesh(points, faces):
 
 if scenePath:
     scenePath = scenePath.strip().strip('"\'')
+    repo = repo or __import__("os").environ.get("SOFAGH_ROOT")
     if repo:
         repo = repo.strip().strip('"\'').rstrip("\\/")
         if repo not in sys.path:
@@ -70,6 +74,14 @@ if scenePath:
                 cavities.append(_mesh(*meshload.read_stl(_abs(c["mesh"]))))
             for r in body.get("regions", []):
                 regions.append(_mesh(*meshload.read_stl(_abs(r["mesh"]))))
+            for cable in body.get("cables", []):
+                pl = rg.Polyline([rg.Point3d(x, y, z)
+                                  for x, y, z in cable["points"]])
+                if cable.get("pull_point"):
+                    q = cable["pull_point"]
+                    pl.Add(rg.Point3d(q[0], q[1], q[2]))
+                tendonCrvs.append(pl)
+                tendonChs.append(int(cable.get("channel", 0)))
             for p in body.get("monitor_points", []):
                 monitorPts.append(rg.Point3d(p[0], p[1], p[2]))
             for bx in body.get("fixations", []):
