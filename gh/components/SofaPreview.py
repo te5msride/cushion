@@ -16,11 +16,11 @@
 #   cavities  : list of Mesh
 #   regions   : list of Mesh
 #   targets   : list of Mesh
-#   tendonCrvs: list of Polyline — cable routing paths
+#   tendonCrvs: list of Curve — cable routing paths
 #   tendonChs : list of int — channel per tendon (Text Tag the start points)
 #   monitorPts: list of Point3d
 #   fixBoxes  : list of Box
-#   info      : str
+#   info      : str — ALWAYS read this when something is off
 
 import json
 import os
@@ -46,61 +46,64 @@ def _mesh(points, faces):
     return m
 
 
-if scenePath:
-    scenePath = scenePath.strip().strip('"\'')
-    repo = repo or __import__("os").environ.get("SOFAGH_ROOT")
-    if repo:
-        repo = repo.strip().strip('"\'').rstrip("\\/")
-        if repo not in sys.path:
-            sys.path.append(repo)
-    from sofagh import meshload, results
+try:
+    if scenePath:
+        scenePath = str(scenePath).strip().strip('"\'')
+        repo = repo or os.environ.get("SOFAGH_ROOT")
+        if repo:
+            repo = str(repo).strip().strip('"\'').rstrip("\\/")
+            if repo not in sys.path:
+                sys.path.append(repo)
+        from sofagh import meshload, results
 
-    proj = os.path.dirname(scenePath)
-    spec_file = os.path.join(proj, "scene.json")
-    if not os.path.isfile(spec_file):
-        info = f"missing {spec_file}"
-    else:
-      try:  # failures report their exact line via the info output
-        with open(spec_file) as f:
-            spec = json.load(f)
-        counts = []
+        proj = os.path.dirname(scenePath)
+        spec_file = os.path.join(proj, "scene.json")
+        if not os.path.isfile(spec_file):
+            info = f"missing {spec_file}"
+        else:
+            with open(spec_file) as f:
+                spec = json.load(f)
+            counts = []
 
-        def _abs(p):
-            return p if os.path.isabs(p) else os.path.join(proj, p)
+            def _abs(p):
+                return p if os.path.isabs(p) else os.path.join(proj, p)
 
-        for body in spec.get("bodies", []):
-            if body.get("volume_vtk"):
-                pts, tets = meshload.read_vtk(_abs(body["volume_vtk"]))
-                volumes.append(_mesh(pts, results.boundary_triangles(tets)))
-            for c in body.get("cavities", []):
-                cavities.append(_mesh(*meshload.read_stl(_abs(c["mesh"]))))
-            for r in body.get("regions", []):
-                regions.append(_mesh(*meshload.read_stl(_abs(r["mesh"]))))
-            for cable in body.get("cables", []):
-                pl = rg.Polyline()
-                for x, y, z in cable.get("points", []):
-                    pl.Add(x, y, z)
-                pp = cable.get("pull_point")
-                if pp:
-                    pl.Add(pp[0], pp[1], pp[2])
-                if pl.Count >= 2:
-                    tendonCrvs.append(pl)
-                    tendonChs.append(int(cable.get("channel", 0)))
-            for p in body.get("monitor_points", []):
-                monitorPts.append(rg.Point3d(p[0], p[1], p[2]))
-            for bx in body.get("fixations", []):
-                bb = rg.BoundingBox(rg.Point3d(min(bx[0], bx[3]), min(bx[1], bx[4]), min(bx[2], bx[5])),
-                                    rg.Point3d(max(bx[0], bx[3]), max(bx[1], bx[4]), max(bx[2], bx[5])))
-                fixBoxes.append(rg.Box(bb))
-            counts.append(f"{body['name']}: vol {len(volumes)}, "
-                          f"cav {len(body.get('cavities', []))}, "
-                          f"reg {len(body.get('regions', []))}")
+            for body in spec.get("bodies", []):
+                if body.get("volume_vtk"):
+                    pts_, tets = meshload.read_vtk(_abs(body["volume_vtk"]))
+                    volumes.append(_mesh(pts_, results.boundary_triangles(tets)))
+                for c in body.get("cavities", []):
+                    cavities.append(_mesh(*meshload.read_stl(_abs(c["mesh"]))))
+                for r in body.get("regions", []):
+                    regions.append(_mesh(*meshload.read_stl(_abs(r["mesh"]))))
+                for cable in body.get("cables", []):
+                    cpts = [rg.Point3d(p[0], p[1], p[2])
+                            for p in cable.get("points", [])]
+                    pp = cable.get("pull_point")
+                    if pp:
+                        cpts.append(rg.Point3d(pp[0], pp[1], pp[2]))
+                    if len(cpts) >= 2:
+                        pl = rg.Polyline()
+                        for q in cpts:
+                            pl.Add(q.X, q.Y, q.Z)
+                        tendonCrvs.append(pl.ToPolylineCurve())
+                        tendonChs.append(int(cable.get("channel", 0)))
+                for p in body.get("monitor_points", []):
+                    monitorPts.append(rg.Point3d(p[0], p[1], p[2]))
+                for bx in body.get("fixations", []):
+                    bb = rg.BoundingBox(
+                        rg.Point3d(min(bx[0], bx[3]), min(bx[1], bx[4]), min(bx[2], bx[5])),
+                        rg.Point3d(max(bx[0], bx[3]), max(bx[1], bx[4]), max(bx[2], bx[5])))
+                    fixBoxes.append(rg.Box(bb))
+                counts.append(f"{body['name']}: vol {len(volumes)}, "
+                              f"cav {len(body.get('cavities', []))}, "
+                              f"reg {len(body.get('regions', []))}")
 
-        for t in spec.get("targets", []):
-            targets.append(_mesh(*meshload.read_stl(_abs(t["mesh"]))))
+            for t in spec.get("targets", []):
+                targets.append(_mesh(*meshload.read_stl(_abs(t["mesh"]))))
 
-        info = ("; ".join(counts)
-                + (f"; tendons {len(tendonCrvs)}" if tendonCrvs else "")
-                + (f"; targets {len(targets)}" if targets else ""))
-      except Exception:
-        info = "SofaPreview failed:\n" + traceback.format_exc()
+            info = ("; ".join(counts)
+                    + (f"; tendons {len(tendonCrvs)}" if tendonCrvs else "")
+                    + (f"; targets {len(targets)}" if targets else ""))
+except Exception:
+    info = "SofaPreview failed:\n" + traceback.format_exc()
