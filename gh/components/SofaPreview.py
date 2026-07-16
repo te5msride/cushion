@@ -25,6 +25,7 @@
 import json
 import os
 import sys
+import traceback
 
 import Rhino.Geometry as rg
 
@@ -59,6 +60,7 @@ if scenePath:
     if not os.path.isfile(spec_file):
         info = f"missing {spec_file}"
     else:
+      try:  # failures report their exact line via the info output
         with open(spec_file) as f:
             spec = json.load(f)
         counts = []
@@ -75,13 +77,15 @@ if scenePath:
             for r in body.get("regions", []):
                 regions.append(_mesh(*meshload.read_stl(_abs(r["mesh"]))))
             for cable in body.get("cables", []):
-                pl = rg.Polyline([rg.Point3d(x, y, z)
-                                  for x, y, z in cable["points"]])
-                if cable.get("pull_point"):
-                    q = cable["pull_point"]
-                    pl.Add(rg.Point3d(q[0], q[1], q[2]))
-                tendonCrvs.append(pl)
-                tendonChs.append(int(cable.get("channel", 0)))
+                pl = rg.Polyline()
+                for x, y, z in cable.get("points", []):
+                    pl.Add(x, y, z)
+                pp = cable.get("pull_point")
+                if pp:
+                    pl.Add(pp[0], pp[1], pp[2])
+                if pl.Count >= 2:
+                    tendonCrvs.append(pl)
+                    tendonChs.append(int(cable.get("channel", 0)))
             for p in body.get("monitor_points", []):
                 monitorPts.append(rg.Point3d(p[0], p[1], p[2]))
             for bx in body.get("fixations", []):
@@ -95,4 +99,8 @@ if scenePath:
         for t in spec.get("targets", []):
             targets.append(_mesh(*meshload.read_stl(_abs(t["mesh"]))))
 
-        info = "; ".join(counts) + (f"; targets {len(targets)}" if targets else "")
+        info = ("; ".join(counts)
+                + (f"; tendons {len(tendonCrvs)}" if tendonCrvs else "")
+                + (f"; targets {len(targets)}" if targets else ""))
+      except Exception:
+        info = "SofaPreview failed:\n" + traceback.format_exc()
