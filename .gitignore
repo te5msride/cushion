@@ -3,3 +3,5 @@ __pycache__/
 .DS_Store
 *.log
 sofa_projects/
+docs/manual/node_modules/
+docs/manual/package*.json
