@@ -1,11 +1,13 @@
-# sofa-gh
+# Cushion
 
-**Soft-robot simulation in Grasshopper, powered by [SOFA](https://www.sofa-framework.org/).**
+**Soft robotics simulation in Grasshopper, powered by [SOFA](https://www.sofa-framework.org/).**
 
 Define a deformable body, its pneumatic cavities and/or tendons, and an
-actuation schedule as Grasshopper components; sofa-gh meshes the
+actuation schedule as Grasshopper components; Cushion meshes the
 geometry, writes a runnable SOFA scene, launches the simulation, and
-pulls trajectories and actuation data back into Grasshopper.
+pulls trajectories, forces, and deformed shapes back into Grasshopper.
+
+*Developed by Trevor Exley and Anderson Brazil Nardin.*
 
 Scene structure follows the Monolithic Unit soft-robotics pipeline
 (Exley, Nardin, Trunin, Cafiso, Beccai — [arXiv:2511.13120](https://arxiv.org/abs/2511.13120)):
