@@ -72,12 +72,12 @@ function ioTable(rows, header) {
 const components = [
   {
     name: "SofaBody", icon: "SofaBody.png", group: "Define",
-    desc: "The deformable finite-element body. Provide a closed solid (Brep preferred) or an existing mesh file; Cushion tet-meshes it via Gmsh and assigns homogenized material properties. All actuation, fixation, monitoring, and display elements attach to a body.",
+    desc: "The deformable finite-element body. Provide a closed solid (Brep preferred) or an existing mesh file; Cushion tet-meshes it via Gmsh and assigns the material properties. All actuation, fixation, monitoring, and display elements attach to a body.",
     inputs: [
       ["geo", "Geometry", "item", "Closed solid. Breps are exported as STEP for exact meshing; meshes as STL."],
       ["volumeFile", "Text", "item", "Alternative to geo: .vtk used as-is (pre-meshed tets); .step/.stl is meshed by Gmsh."],
       ["name", "Text", "item", "Node name, unique per body (default actuator1). SofaResults/SofaShape reference it."],
-      ["E", "Number", "item", "Effective Young's modulus, kPa. Use the homogenized value for lattice bodies."],
+      ["E", "Number", "item", "Young's modulus, kPa."],
       ["nu", "Number", "item", "Poisson ratio (default 0.4)."],
       ["mass", "Number", "item", "Total mass, kg."],
       ["meshSize", "Number", "item", "Gmsh mesh size factor; smaller = finer tets."],
@@ -88,13 +88,13 @@ const components = [
       ["monitorPts", "Point", "list", "Tracked points, snapped to closest mesh nodes; required for trajectory output."],
       ["collisionGeo", "Geometry", "item", "Collision surface; wire only when contact matters (costs compute)."],
       ["collisionFile", "Text", "item", "Alternative: existing collision .stl path."],
-      ["visualGeo", "Geometry", "list", "Display-only surfaces (e.g. a lattice), deformed with the body but never simulated."],
+      ["visualGeo", "Geometry", "list", "Display-only surfaces, deformed with the body but never simulated."],
       ["visualFiles", "Text", "list", "Display-only .stl paths, used as-is."],
       ["visualFaces", "Integer", "item", "Decimate visualGeo to this face count on export (0 = off)."],
       ["exportShape", "Integer", "item", "Export the deformed volume mesh every N steps for SofaShape playback (0 = off)."],
     ],
     outputs: [["body", "Body reference, feed into SofaScene."]],
-    notes: "Heavy lattice geometry belongs in visualGeo, never in geo: simulate the homogenized envelope, display the lattice.",
+    notes: "",
   },
   {
     name: "SofaCavity", icon: "SofaCavity.png", group: "Define",
@@ -373,12 +373,30 @@ children.push(heading("Dependencies & Installation", HeadingLevel.HEADING_1));
   spacing: { after: 140 },
   children: [new TextRun({ text: "-  " + t, size: 22, font: "Helvetica" })],
 })));
+children.push(heading("Installing Cushion", HeadingLevel.HEADING_2));
+[
+  "From the Rhino Package Manager: run the _PackageManager command, search for Cushion, install, restart Rhino. The Cushion tab appears in Grasshopper.",
+  "Or manually from food4Rhino: download the .gha file, then in Grasshopper open File > Special Folders > Components Folder, copy the .gha there. On Windows, right-click the downloaded file > Properties > Unblock before copying. Restart Rhino.",
+].forEach(t => children.push(new Paragraph({
+  spacing: { after: 140 },
+  children: [new TextRun({ text: "-  " + t, size: 22, font: "Helvetica" })],
+})));
+children.push(heading("Links", HeadingLevel.HEADING_2));
+[
+  "Rhino 8: www.rhino3d.com",
+  "SOFA v24.06 binaries: www.sofa-framework.org/download",
+  "Python 3.10 (python.org installer): www.python.org/downloads/release/python-31011",
+  "Cushion repository & issues: [repository URL]",
+  "Manual, examples, install guides: [repository URL]/docs",
+].forEach(t => children.push(new Paragraph({
+  spacing: { after: 100 },
+  children: [new TextRun({ text: "-  " + t, size: 22, font: "Helvetica" })],
+})));
 children.push(p("Verify the SOFA side before using Cushion:", { size: 22, after: 80 }));
 children.push(p("<SOFA>/bin/runSofa -l SofaPython3 -g batch -n 1", { size: 20, after: 240 }));
 children.push(heading("Units & Conventions", HeadingLevel.HEADING_1));
 [
   "Millimeters, kilopascals, kilograms, seconds. Gravity -9810 mm/s2 in world Z. Geometry passes from Rhino to SOFA 1:1 -- no transform, no unit conversion. The Rhino document must be in millimeters.",
-  "Young's moduli are effective values: for architected/lattice bodies, use the homogenized modulus of the structure, and send detailed lattice geometry to the display-only visual inputs.",
 ].forEach(t => children.push(p(t, { size: 22, after: 200 })));
 children.push(new Paragraph({ children: [new PageBreak()] }));
 
