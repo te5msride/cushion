@@ -1,4 +1,8 @@
-# Cushion
+<p align="center">
+  <img src="docs/manual/figures/logofinal.png" width="360" alt="Cushion logo"/>
+</p>
+
+<h1 align="center">Cushion</h1>
 
 **Soft robotics simulation in Grasshopper, powered by [SOFA](https://www.sofa-framework.org/).**
 
@@ -23,8 +27,10 @@ GH geometry ──► STL/STEP ──► gmsh tets ──► scene.json + input.
 ## Status
 
 Working prototype (v0.1). Tested on Windows 11 + macOS with Rhino 8 and
-SOFA v24.06. Interface may change. License TBD (pending institutional
-check) — do not redistribute yet.
+SOFA v24.06. Interface may change. Licensed under [MIT](LICENSE).
+
+📖 **[Manual (PDF)](docs/manual/Cushion_Manual.pdf)** — component
+reference, installation, workflow example.
 
 ## Requirements
 
