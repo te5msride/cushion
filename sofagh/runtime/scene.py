@@ -72,11 +72,16 @@ def _add_target(rootNode, tgt):
     col = t.addChild("collision")
     col.addObject("MeshSTLLoader", name="loader", filename=_abspath(tgt["mesh"]))
     col.addObject("MeshTopology", src="@loader")
-    col.addObject("MechanicalObject")
+    col.addObject("MechanicalObject", name="points")
     col.addObject("TriangleCollisionModel", name="target")
     col.addObject("LineCollisionModel", name="target")
     col.addObject("PointCollisionModel", name="target")
     col.addObject("RigidMapping")
+    # 3-point pose track (indices bound by the controller) so
+    # AnimationPreview can replay the target's rigid motion
+    col.addObject("Monitor", name="posetrack", template="Vec3d", listening=1,
+                  showPositions=False, ExportPositions=True,
+                  fileName=os.path.join(HERE, "monitor", "target_" + tgt["name"]))
 
     visu = t.addChild("visual")
     visu.addObject("MeshSTLLoader", name="loader", filename=_abspath(tgt["mesh"]))

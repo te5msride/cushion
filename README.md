@@ -75,7 +75,7 @@ Full platform-specific steps: [docs/INSTALL.md](docs/INSTALL.md).
 | `SofaRun` | Launches runSofa (GUI or headless batch) |
 | `SofaResults` | Parses trajectories + actuation history back into GH |
 | `SofaShape` | Rebuilds the deformed body surface at any exported frame |
-| `SofaPreview` | Rebuilds the whole written scene (incl. file-path meshes and the gmsh volume) as Rhino geometry |
+| `SetupPreview` | Rebuilds the whole written scene (incl. file-path meshes and the gmsh volume) as Rhino geometry |
 
 Details, input tables, modeling notes: [docs/COMPONENTS.md](docs/COMPONENTS.md).
 

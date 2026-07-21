@@ -129,7 +129,40 @@ regions never exist as separate bodies.
 Output: `profile` (object). Linear interpolation, resampled at 100 Hz
 into input.csv. Value held at nearest endpoint outside the keyframe span.
 
-## SofaPreview — scene preview in the Rhino viewport
+## SofaProtocol — keyframed rigid body motion
+
+Keyframes an offset of the whole body over time (pick-and-place moves:
+carry the gripper down, hold, lift). Applied through the body's rest
+positions — the body is dragged by its **fixations**; a body without a
+fixation box will not follow.
+
+| Input | Hint | Access | Notes |
+|---|---|---|---|
+| times | float | list | keyframe times, s |
+| offsets | Vector3d | list | body offset from its start position per keyframe; first usually (0,0,0) |
+| name | str | item | optional |
+
+Output: `protocol` (token) → new `SofaBody.protocol` input. Linear
+interpolation; held outside the keyframe span. Time the actuation
+profiles to match (e.g. inflate while the offset holds at the object).
+
+## AnimationPreview — scrub the finished sim in the viewport
+
+Frame slider → deformed body volumes (needs `exportShape` on bodies),
+rigid targets at their frame pose (automatic 3-point pose track),
+monitored points at that instant, static fixation boxes + tendon paths.
+
+| Input | Hint | Access | Notes |
+|---|---|---|---|
+| scenePath | str | item | |
+| frame | int | item | empty = last; wire slider 0..nFrames−1 |
+| repo | str | item | |
+| refresh | bool | item | |
+
+Outputs: `volumes`, `targets`, `trackPts`, `tendonCrvs` (static),
+`fixBoxes`, `nFrames`, `time`, `info`.
+
+## SetupPreview — scene preview in the Rhino viewport
 
 Reads the written project folder and rebuilds everything as Rhino
 geometry — including file-path meshes that never existed in GH and the

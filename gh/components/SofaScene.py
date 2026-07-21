@@ -190,6 +190,7 @@ if write and bodies and projDir:
             "collision_mesh": collision_mesh,
             "visuals": visuals,
             "export_shape": int(bd.get("export_shape", 0)),
+            "protocol": _resolve(bd.get("protocol_ref")),
         })
 
     spec_targets = []

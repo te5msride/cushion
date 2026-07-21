@@ -1,4 +1,4 @@
-# SofaPreview — view everything the written scene contains, in Rhino
+# SetupPreview — view everything the written scene contains, in Rhino
 #
 # Rhino 8 Grasshopper Script component (Python 3).
 # Reads the project folder (scene.json + mesh files) after SofaScene
@@ -129,4 +129,4 @@ try:
             if _skipped:
                 info += "\nSKIPPED (bad mesh files):\n" + "\n".join(_skipped)
 except Exception:
-    info = "SofaPreview failed:\n" + traceback.format_exc()
+    info = "SetupPreview failed:\n" + traceback.format_exc()

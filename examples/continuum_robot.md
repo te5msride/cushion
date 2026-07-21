@@ -14,7 +14,7 @@ workspace sample. Convex hull of the tip cloud = workspace bounds.
 | tendon radius | 8 mm | route inside the body |
 | tendons | 3 at 0°/120°/240° | valueType **force** (multi-cable rule) |
 | E / ν / mass | 100 kPa / 0.4 / 0.03 kg | tune E for your material |
-| meshSize | 0.4 | check with SofaPreview; smaller = finer |
+| meshSize | 0.4 | check with SetupPreview; smaller = finer |
 | Tmax | 500 mN | tune: tip should bend visibly, not buckle |
 | gravityZ | 0 | flip to −9810 for gravity-loaded workspace |
 
@@ -53,7 +53,7 @@ for interior coverage if wanted.
 **Scene + run**
 1. `SofaScene`: projDir e.g. `C:\SOFA\projects\continuum1`, gravityZ 0,
    no floor, no collision (nothing to touch — keep it fast), write.
-2. `SofaPreview`: check tet surface density, tendon points inside the
+2. `SetupPreview`: check tet surface density, tendon points inside the
    volume, fixation box swallowing the base.
 3. `SofaRun`: gui True first (watch one sweep), then batch for the real
    run. ~13 s sim ≈ 1300 steps.

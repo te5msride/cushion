@@ -25,6 +25,8 @@
 #   visualFaces : int — decimate visuals to this face count on export [item, int]
 #                 (0/empty = keep full resolution; visuals are never
 #                  simulated, so decimation is free physically)
+#   protocol   : str — keyframed rigid motion from SofaProtocol       [item, str]
+#                (applied via rest positions; needs fixations)
 #   exportShape : int — export full deformed volume mesh every N steps [item, int]
 #                 during the sim (0/empty = off). Read back with the
 #                 SofaShape component. N=10 at dt=0.01 -> 10 frames/s.
@@ -42,6 +44,7 @@ visualFiles = _g.get("visualFiles")
 visualFaces = _g.get("visualFaces")
 exportShape = _g.get("exportShape")
 collisionFile = _g.get("collisionFile")
+protocol = _g.get("protocol")
 
 if not hasattr(builtins, "_sofagh_registry"):
     builtins._sofagh_registry = {}
@@ -93,4 +96,5 @@ if geo is not None or volumeFile:
         "visual_files": [f.strip().strip('"\'') for f in (visualFiles or []) if f],
         "visual_faces": int(visualFaces) if visualFaces else 0,
         "export_shape": int(exportShape) if exportShape else 0,
+        "protocol_ref": protocol,
     })

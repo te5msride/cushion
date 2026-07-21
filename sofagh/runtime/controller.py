@@ -74,6 +74,25 @@ class PressureScheduleController(Sofa.Core.Controller):
                 monitor = getattr(body_node, "monitor_" + body["name"])
                 self.monitors.append((body_node, monitor, body["monitor_points"]))
 
+        # scheduled rigid motion (SofaProtocol): keyframed offset applied
+        # through rest positions -- drags the body via its fixations
+        self.protocols = []
+        for body in self.spec.get("bodies", []):
+            proto = body.get("protocol")
+            if proto and proto.get("times"):
+                self.protocols.append({
+                    "node": getattr(self.node, body["name"]),
+                    "times": [float(v) for v in proto["times"]],
+                    "offsets": [list(map(float, o)) for o in proto["offsets"]],
+                    "applied": [0.0, 0.0, 0.0],
+                })
+
+        # target pose tracks: bind 3 spread indices at first step
+        self.target_monitors = []
+        for tgt in self.spec.get("targets", []):
+            tnode = getattr(self.node, tgt["name"])
+            self.target_monitors.append(tnode.collision.posetrack)
+
         self.channels = sorted({a["channel"] for a in self.actuators})
 
         if self.save:
@@ -104,6 +123,32 @@ class PressureScheduleController(Sofa.Core.Controller):
                 idx = closest_node_indices(points, body_node.tetras.position.value)
                 monitor.indices = idx
                 print(f"[sofagh] monitor nodes: {idx}")
+            for pm in self.target_monitors:
+                n = len(pm.getContext().points.position.value)
+                pm.indices = sorted({0, n // 3, (2 * n) // 3})
+
+        # scheduled rigid motion: shift rest positions by the keyframed
+        # offset delta (piecewise-linear interpolation)
+        for proto in self.protocols:
+            ts, offs = proto["times"], proto["offsets"]
+            if t <= ts[0]:
+                target = offs[0]
+            elif t >= ts[-1]:
+                target = offs[-1]
+            else:
+                k = next(i for i in range(1, len(ts)) if t <= ts[i])
+                f = (t - ts[k - 1]) / (ts[k] - ts[k - 1] or 1.0)
+                target = [offs[k - 1][j] + f * (offs[k][j] - offs[k - 1][j])
+                          for j in range(3)]
+            delta = [target[j] - proto["applied"][j] for j in range(3)]
+            if any(abs(d) > 1e-12 for d in delta):
+                dofs = proto["node"].tetras
+                rest = np.array(dofs.rest_position.value)
+                rest[:, 0] += delta[0]
+                rest[:, 1] += delta[1]
+                rest[:, 2] += delta[2]
+                dofs.rest_position.value = rest.tolist()
+                proto["applied"] = target
 
         # command actuators from the schedule
         if self.pre_time < t < (self.duration - self.pos_time):

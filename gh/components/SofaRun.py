@@ -35,7 +35,13 @@ if run and scenePath:
             sys.path.append(repo)
     from sofagh import runner
 
-    use_gui = True if gui is None else bool(gui)
+    # robust bool coercion: without a bool type hint GH delivers a
+    # wrapped object whose truthiness is always True
+    if gui is None:
+        use_gui = True
+    else:
+        _v = getattr(gui, "Value", gui)
+        use_gui = _v if isinstance(_v, bool) else str(_v).strip().lower() not in ("false", "0", "")
     rect = [int(v) for v in winRect] if winRect and len(winRect) == 4 else None
     rc, log = runner.run(scenePath, sofa_root=sofaRoot or None,
                          gui=use_gui, blocking=not use_gui, window=rect)
