@@ -84,17 +84,45 @@ try:
             def _abs(p):
                 return p if os.path.isabs(p) else os.path.join(proj, p)
 
+            import math as _m
+
+            def _place_xf(body):
+                pl = body.get("placement")
+                if not pl:
+                    return None
+                ax, ay, az = [_m.radians(a) for a in pl["rotation"]]
+                xf = rg.Transform.Rotation(az, rg.Vector3d.ZAxis, rg.Point3d.Origin)
+                xf *= rg.Transform.Rotation(ay, rg.Vector3d.YAxis, rg.Point3d.Origin)
+                xf *= rg.Transform.Rotation(ax, rg.Vector3d.XAxis, rg.Point3d.Origin)
+                return rg.Transform.Translation(*pl["translation"]) * xf
+
+            def _placed(mesh, xf):
+                if mesh is not None and xf is not None:
+                    mesh.Transform(xf)
+                return mesh
+
+            def _oriented_box(ob):
+                p0 = rg.Point3d(ob[0], ob[1], ob[2])
+                p1 = rg.Point3d(ob[3], ob[4], ob[5])
+                p2 = rg.Point3d(ob[6], ob[7], ob[8])
+                vx, vy = p1 - p0, p2 - p1
+                pln = rg.Plane(p0, vx, vy)
+                return rg.Box(pln, rg.Interval(0, vx.Length),
+                              rg.Interval(0, vy.Length),
+                              rg.Interval(-ob[9] / 2.0, ob[9] / 2.0))
+
             for body in spec.get("bodies", []):
+                xf = _place_xf(body)
                 if body.get("volume_vtk"):
                     pts_, tets = meshload.read_vtk(_abs(body["volume_vtk"]))
-                    _keep(volumes, _mesh(pts_, results.boundary_triangles(tets),
-                                         body["volume_vtk"]))
+                    _keep(volumes, _placed(_mesh(pts_, results.boundary_triangles(tets),
+                                                 body["volume_vtk"]), xf))
                 for c in body.get("cavities", []):
-                    _keep(cavities, _mesh(*meshload.read_stl(_abs(c["mesh"])),
-                                          label=c["mesh"]))
+                    _keep(cavities, _placed(_mesh(*meshload.read_stl(_abs(c["mesh"])),
+                                                  label=c["mesh"]), xf))
                 for r in body.get("regions", []):
-                    _keep(regions, _mesh(*meshload.read_stl(_abs(r["mesh"])),
-                                         label=r["mesh"]))
+                    _keep(regions, _placed(_mesh(*meshload.read_stl(_abs(r["mesh"])),
+                                                 label=r["mesh"]), xf))
                 for cable in body.get("cables", []):
                     cpts = [rg.Point3d(p[0], p[1], p[2])
                             for p in cable.get("points", [])]
@@ -115,6 +143,8 @@ try:
                         rg.Point3d(min(bx[0], bx[3]), min(bx[1], bx[4]), min(bx[2], bx[5])),
                         rg.Point3d(max(bx[0], bx[3]), max(bx[1], bx[4]), max(bx[2], bx[5])))
                     fixBoxes.append(rg.Box(bb))
+                for ob in body.get("fixations_oriented", []):
+                    fixBoxes.append(_oriented_box(ob))
                 counts.append(f"{body['name']}: vol {len(volumes)}, "
                               f"cav {len(body.get('cavities', []))}, "
                               f"reg {len(body.get('regions', []))}")

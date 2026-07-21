@@ -98,6 +98,30 @@ if write and bodies and projDir:
             return data
         return x
 
+    import math as _math
+
+    def _placement(m):
+        """3x4 rigid matrix -> (translation, SOFA euler XYZ degrees).
+        SOFA loaders apply R = Rz*Ry*Rx about the origin, then translate."""
+        R = [row[:3] for row in m]
+        t = [m[0][3], m[1][3], m[2][3]]
+        # rigidity check: columns orthonormal, det +1
+        det = (R[0][0]*(R[1][1]*R[2][2]-R[1][2]*R[2][1])
+               - R[0][1]*(R[1][0]*R[2][2]-R[1][2]*R[2][0])
+               + R[0][2]*(R[1][0]*R[2][1]-R[1][1]*R[2][0]))
+        if abs(det - 1.0) > 1e-6:
+            raise ValueError("orient must be rigid (rotation+translation, "
+                             f"no scaling/mirroring); det = {det:.6f}")
+        beta = _math.asin(max(-1.0, min(1.0, -R[2][0])))
+        alpha = _math.atan2(R[2][1], R[2][2])
+        gamma = _math.atan2(R[1][0], R[0][0])
+        rot = [_math.degrees(alpha), _math.degrees(beta), _math.degrees(gamma)]
+        return t, rot
+
+    def _apply(m, p):
+        return [m[i][0]*p[0] + m[i][1]*p[1] + m[i][2]*p[2] + m[i][3]
+                for i in range(3)]
+
     spec_bodies = []
     for bd in bodies:
         bd = _resolve(bd)
@@ -174,6 +198,33 @@ if write and bodies and projDir:
                 raise FileNotFoundError(f"{bname}: visual file not found: {vf}")
             visuals.append({"mesh": vf})
 
+        # --- placement (orient): loaders get rotation/translation;
+        # numeric data (points, boxes) is transformed here
+        m = bd.get("orient")
+        placement = None
+        monitor_pts = list(bd.get("monitor_points", []))
+        fixations, fixations_oriented = \
+            [ghcommon.box_to_list(b) for b in bd.get("fixation_boxes", [])], []
+        if m:
+            tr, rot = _placement(m)
+            placement = {"translation": tr, "rotation": rot}
+            monitor_pts = [_apply(m, p) for p in monitor_pts]
+            for cb in cables:
+                cb["points"] = [_apply(m, p) for p in cb["points"]]
+                if cb.get("pull_point"):
+                    cb["pull_point"] = _apply(m, cb["pull_point"])
+            # axis-aligned design boxes become oriented world boxes:
+            # face at mid-depth (p0,p1,p2) + symmetric depth
+            fixations_oriented = []
+            for bx in fixations:
+                x0, y0, z0, x1, y1, z1 = bx
+                zm = (z0 + z1) / 2.0
+                p0 = _apply(m, [x0, y0, zm])
+                p1 = _apply(m, [x1, y0, zm])
+                p2 = _apply(m, [x1, y1, zm])
+                fixations_oriented.append(p0 + p1 + p2 + [abs(z1 - z0)])
+            fixations = []
+
         spec_bodies.append({
             "name": bname,
             "volume_source": vol_src,
@@ -182,8 +233,10 @@ if write and bodies and projDir:
             "young_modulus": bd["young_modulus"],
             "poisson_ratio": bd["poisson_ratio"],
             "total_mass": bd["total_mass"],
-            "fixations": [ghcommon.box_to_list(b) for b in bd.get("fixation_boxes", [])],
-            "monitor_points": bd.get("monitor_points", []),
+            "placement": placement,
+            "fixations": fixations,
+            "fixations_oriented": fixations_oriented,
+            "monitor_points": monitor_pts,
             "cavities": cavities,
             "cables": cables,
             "regions": regions,

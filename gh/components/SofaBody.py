@@ -27,6 +27,11 @@
 #                  simulated, so decimation is free physically)
 #   protocol   : str — keyframed rigid motion from SofaProtocol       [item, str]
 #                (applied via rest positions; needs fixations)
+#   orient     : Transform — rigid placement applied to the WHOLE     [item, Transform]
+#                body assembly (geo, cavities, tendons, fixations,
+#                monitor points) at write time. Design flat, then wire
+#                e.g. the X output of an Orient component. Rigid only
+#                (rotation + translation, no scaling).
 #   exportShape : int — export full deformed volume mesh every N steps [item, int]
 #                 during the sim (0/empty = off). Read back with the
 #                 SofaShape component. N=10 at dt=0.01 -> 10 frames/s.
@@ -45,6 +50,7 @@ visualFaces = _g.get("visualFaces")
 exportShape = _g.get("exportShape")
 collisionFile = _g.get("collisionFile")
 protocol = _g.get("protocol")
+orient = _g.get("orient")
 
 if not hasattr(builtins, "_sofagh_registry"):
     builtins._sofagh_registry = {}
@@ -97,4 +103,8 @@ if geo is not None or volumeFile:
         "visual_faces": int(visualFaces) if visualFaces else 0,
         "export_shape": int(exportShape) if exportShape else 0,
         "protocol_ref": protocol,
+        "orient": ([[orient.M00, orient.M01, orient.M02, orient.M03],
+                    [orient.M10, orient.M11, orient.M12, orient.M13],
+                    [orient.M20, orient.M21, orient.M22, orient.M23]]
+                   if orient is not None else None),
     })

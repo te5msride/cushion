@@ -145,6 +145,15 @@ try:
                     rg.Point3d(min(bx[0], bx[3]), min(bx[1], bx[4]), min(bx[2], bx[5])),
                     rg.Point3d(max(bx[0], bx[3]), max(bx[1], bx[4]), max(bx[2], bx[5])))
                 fixBoxes.append(rg.Box(bb))
+            for ob in body.get("fixations_oriented", []):
+                p0 = rg.Point3d(ob[0], ob[1], ob[2])
+                p1 = rg.Point3d(ob[3], ob[4], ob[5])
+                p2 = rg.Point3d(ob[6], ob[7], ob[8])
+                vx, vy = p1 - p0, p2 - p1
+                pln = rg.Plane(p0, vx, vy)
+                fixBoxes.append(rg.Box(pln, rg.Interval(0, vx.Length),
+                                       rg.Interval(0, vy.Length),
+                                       rg.Interval(-ob[9] / 2.0, ob[9] / 2.0)))
 
         info = "; ".join(lines) if lines else \
             "no shape frames — set exportShape on SofaBody, rewrite, rerun"

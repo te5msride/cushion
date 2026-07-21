@@ -92,12 +92,17 @@ def _add_target(rootNode, tgt):
 
 
 def _add_body(rootNode, body, spec):
+    # rigid placement (SofaBody.orient): applied by every mesh loader
+    pl = body.get("placement") or {}
+    place = ({"rotation": pl["rotation"], "translation": pl["translation"]}
+             if pl else {})
+
     b = rootNode.addChild(body["name"])
     b.addObject("EulerImplicitSolver", name="odesolver",
                 rayleighStiffness=0.1, rayleighMass=0.1)
     b.addObject("SparseLDLSolver", name="preconditioner")
     b.addObject("MeshVTKLoader", name="loader",
-                filename=_abspath(body["volume_vtk"]))
+                filename=_abspath(body["volume_vtk"]), **place)
     b.addObject("TetrahedronSetTopologyContainer", tetrahedra="@loader.tetrahedra",
                 position="@loader.position", name="container")
     b.addObject("MechanicalObject", name="tetras", template="Vec3")
@@ -113,6 +118,12 @@ def _add_body(rootNode, body, spec):
         b.addObject("BoxROI", name=f"fixBox{fi}", box=box, drawBoxes=True,
                     doUpdate=False)
         b.addObject("RestShapeSpringsForceField", points=f"@fixBox{fi}.indices",
+                    stiffness=1e12, angularStiffness=1e12)
+    # oriented fixation boxes (placed bodies): p0 p1 p2 + depth
+    for fi, ob in enumerate(body.get("fixations_oriented", [])):
+        b.addObject("BoxROI", name=f"fixOBox{fi}", orientedBox=ob,
+                    drawBoxes=True, doUpdate=False)
+        b.addObject("RestShapeSpringsForceField", points=f"@fixOBox{fi}.indices",
                     stiffness=1e12, angularStiffness=1e12)
 
     # Monitor tracked points (indices bound by controller on first step)
@@ -135,7 +146,7 @@ def _add_body(rootNode, body, spec):
     for region in body.get("regions", []):
         r = b.addChild(region["name"])
         r.addObject("MeshSTLLoader", name="ROIloader",
-                    filename=_abspath(region["mesh"]))
+                    filename=_abspath(region["mesh"]), **place)
         r.addObject("MeshROI", name="ROI", doUpdate="0",
                     position="@../loader.position",
                     tetrahedra="@../loader.tetrahedra",
@@ -152,7 +163,7 @@ def _add_body(rootNode, body, spec):
     for cavity in body.get("cavities", []):
         c = b.addChild(cavity["name"])
         c.addObject("MeshSTLLoader", name="loader",
-                    filename=_abspath(cavity["mesh"]))
+                    filename=_abspath(cavity["mesh"]), **place)
         c.addObject("MeshTopology", src="@loader", name="topo")
         c.addObject("MechanicalObject", name="cavity")
         c.addObject("SurfacePressureConstraint", name="SurfacePressureConstraint",
@@ -190,7 +201,7 @@ def _add_body(rootNode, body, spec):
     if body.get("collision_mesh"):
         col = b.addChild("collision")
         col.addObject("MeshSTLLoader", name="loader",
-                      filename=_abspath(body["collision_mesh"]))
+                      filename=_abspath(body["collision_mesh"]), **place)
         col.addObject("MeshTopology", src="@loader", name="topo")
         col.addObject("MechanicalObject", name="collisMech")
         col.addObject("TriangleCollisionModel", selfCollision=False)
@@ -203,7 +214,7 @@ def _add_body(rootNode, body, spec):
     for vi, visual in enumerate(body.get("visuals", [])):
         v = b.addChild(f"visual{vi}")
         v.addObject("MeshSTLLoader", name="loader",
-                    filename=_abspath(visual["mesh"]))
+                    filename=_abspath(visual["mesh"]), **place)
         v.addObject("OglModel", src="@loader",
                     color=visual.get("color", [0.7, 0.9, 0.9, 0.5]))
         v.addObject("BarycentricMapping")

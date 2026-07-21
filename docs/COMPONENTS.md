@@ -36,6 +36,7 @@ General rules:
 | tendons | str/none | list | from SofaTendon |
 | regions | str/none | list | from SofaRegion |
 | fixations | Box | list | nodes inside are clamped (RestShapeSprings 1e12) |
+| orient | Transform | item | rigid placement of the WHOLE body assembly (geo, cavities, tendons, fixations, monitor points) — design flat, wire e.g. an Orient component's X output; rotation+translation only |
 | monitorPts | Point3d | list | tracked points; snapped to closest mesh nodes at start; required for SofaResults trajectories |
 | collisionGeo | Geometry | item | collision surface; only wire when contact matters (costs compute) |
 | collisionFile | str | item | OR existing collision `.stl` path |
