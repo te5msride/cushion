@@ -27,7 +27,10 @@ GH geometry ──► STL/STEP ──► gmsh tets ──► scene.json + input.
 ## Status
 
 Working prototype (v0.1). Tested on Windows 11 + macOS with Rhino 8 and
-SOFA v24.06. Interface may change. Licensed under [MIT](LICENSE).
+SOFA v24.06. Interface may change.
+
+This project is licensed under the GNU Lesser General Public License
+v2.1 or later — see [LICENSE](LICENSE).
 
 📖 **[Manual (PDF)](docs/manual/Cushion_Manual.pdf)** — component
 reference, installation, workflow example.
