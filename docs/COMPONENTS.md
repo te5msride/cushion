@@ -36,6 +36,7 @@ General rules:
 | tendons | str/none | list | from SofaTendon |
 | regions | str/none | list | from SofaRegion |
 | fixations | Box | list | nodes inside are clamped (RestShapeSprings 1e12) |
+| hollow | bool | item | cavities become internal voids of the tet mesh (default True — the physical membrane); False = solid body, pressure on an internal surface |
 | orient | Transform | item | rigid placement of the WHOLE body assembly (geo, cavities, tendons, fixations, monitor points) — design flat, wire e.g. an Orient component's X output; rotation+translation only |
 | rotate | Vector3d | item | OR euler degrees about world X,Y,Z (applied X→Y→Z, SOFA convention); ignored if orient wired |
 | translate | Vector3d | item | translation applied after rotate |

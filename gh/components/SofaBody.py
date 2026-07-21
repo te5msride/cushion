@@ -36,6 +36,9 @@
 #                X, Y, Z (applied X then Y then Z, SOFA convention —
 #                same as the reference scenes). Ignored if orient set.
 #   translate  : Vector3d — translation applied after rotate          [item, Vector3d]
+#   hollow     : bool — cavities become internal voids of the tet     [item, bool]
+#                mesh (default True; the physical membrane). False =
+#                solid body with pressure on an internal surface.
 #   exportShape : int — export full deformed volume mesh every N steps [item, int]
 #                 during the sim (0/empty = off). Read back with the
 #                 SofaShape component. N=10 at dt=0.01 -> 10 frames/s.
@@ -55,6 +58,7 @@ exportShape = _g.get("exportShape")
 collisionFile = _g.get("collisionFile")
 protocol = _g.get("protocol")
 orient = _g.get("orient")
+hollow = _g.get("hollow")
 rotate = _g.get("rotate")
 translate = _g.get("translate")
 
@@ -109,6 +113,7 @@ if geo is not None or volumeFile:
         "visual_faces": int(visualFaces) if visualFaces else 0,
         "export_shape": int(exportShape) if exportShape else 0,
         "protocol_ref": protocol,
+        "hollow": True if hollow is None else bool(getattr(hollow, "Value", hollow)),
         "orient": ([[orient.M00, orient.M01, orient.M02, orient.M03],
                     [orient.M10, orient.M11, orient.M12, orient.M13],
                     [orient.M20, orient.M21, orient.M22, orient.M23]]

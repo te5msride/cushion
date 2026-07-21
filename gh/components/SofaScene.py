@@ -134,25 +134,7 @@ if write and bodies and projDir:
                 "(re-paste the current SofaBody script if this persists)")
         bname = bd["name"]
 
-        # --- volume: existing file, or Brep -> STEP (preferred), else STL
         import Rhino.Geometry as rg
-        vol_src, vol_vtk = None, None
-        vfile = bd.get("volume_file")
-        if vfile:
-            if not os.path.isfile(vfile):
-                raise FileNotFoundError(f"{bname}: volumeFile not found: {vfile}")
-            if vfile.lower().endswith(".vtk"):
-                vol_vtk = vfile          # pre-meshed tets, used as-is
-            else:
-                vol_src = vfile          # .step/.stl, gmsh will mesh it
-        else:
-            geo = bd["geo"]
-            if isinstance(geo, (rg.Brep, rg.Extrusion)):
-                brep = geo.ToBrep() if isinstance(geo, rg.Extrusion) else geo
-                vol_src = ghcommon.write_step(brep, os.path.join(mesh_dir, bname + ".step"))
-            if vol_src is None:
-                vol_src = ghcommon.write_stl(geo, os.path.join(mesh_dir, bname + "_volume.stl"))
-        lines.append(f"{bname}: volume {os.path.basename(vol_vtk or vol_src)}")
 
         cavities = []
         for c in bd.get("cavity_defs", []):
@@ -161,6 +143,34 @@ if write and bodies and projDir:
             else:
                 p = ghcommon.write_stl(c["geo"], os.path.join(mesh_dir, f"{bname}_{c['name']}.stl"))
             cavities.append({"name": c["name"], "channel": c["channel"], "mesh": p})
+
+        # hollow bodies (default): cavity surfaces become internal voids
+        # of the tet mesh -- the "membrane with no inlet" needs no
+        # boolean anywhere, gmsh subtracts at mesh time
+        hollow = bd.get("hollow", True)
+        voids = [c["mesh"] for c in cavities] if (hollow and cavities) else []
+
+        # --- volume: existing file, or geometry (STL when hollow,
+        # else Brep -> STEP preferred with STL fallback)
+        vol_src, vol_vtk = None, None
+        vfile = bd.get("volume_file")
+        if vfile:
+            voids = []               # file mode: user controls the mesh
+            if not os.path.isfile(vfile):
+                raise FileNotFoundError(f"{bname}: volumeFile not found: {vfile}")
+            if vfile.lower().endswith(".vtk"):
+                vol_vtk = vfile          # pre-meshed tets, used as-is
+            else:
+                vol_src = vfile          # .step/.stl, gmsh will mesh it
+        else:
+            geo = bd["geo"]
+            if not voids and isinstance(geo, (rg.Brep, rg.Extrusion)):
+                brep = geo.ToBrep() if isinstance(geo, rg.Extrusion) else geo
+                vol_src = ghcommon.write_step(brep, os.path.join(mesh_dir, bname + ".step"))
+            if vol_src is None:
+                vol_src = ghcommon.write_stl(geo, os.path.join(mesh_dir, bname + "_volume.stl"))
+        lines.append(f"{bname}: volume {os.path.basename(vol_vtk or vol_src)}"
+                     + (f" ({len(voids)} voids)" if voids else ""))
 
         cables = []
         for t in bd.get("tendon_defs", []):
@@ -245,6 +255,7 @@ if write and bodies and projDir:
             "name": bname,
             "volume_source": vol_src,
             "volume_vtk": vol_vtk,
+            "volume_voids": voids,
             "mesh_size": bd.get("mesh_size", 1.0),
             "young_modulus": bd["young_modulus"],
             "poisson_ratio": bd["poisson_ratio"],

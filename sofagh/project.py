@@ -72,7 +72,8 @@ def write_project(project_dir, bodies, profiles, options=None, targets=None):
             if not src:
                 raise ValueError(f"body '{body.get('name')}' has no volume_vtk or volume_source")
             vtk_path = os.path.join(project_dir, "meshes", body["name"] + ".vtk")
-            _meshing.volume_mesh(src, vtk_path, mesh_size=body.get("mesh_size", 1.0))
+            _meshing.volume_mesh(src, vtk_path, mesh_size=body.get("mesh_size", 1.0),
+                                 voids=body.get("volume_voids") or None)
             body["volume_vtk"] = vtk_path
         body["volume_vtk"] = _relpath(body["volume_vtk"], project_dir)
         for key in ("collision_mesh",):

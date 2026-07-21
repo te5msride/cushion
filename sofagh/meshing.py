@@ -9,11 +9,14 @@ import os
 
 
 def volume_mesh(input_path, output_path=None, mesh_size=1.0, algorithm3d=1,
-                verbose=False):
+                verbose=False, voids=None):
     """Tet-mesh a solid and write a legacy VTK file SOFA's MeshVTKLoader reads.
 
     input_path: .step/.stp (preferred, exact geometry) or closed .stl surface.
     mesh_size:  gmsh Mesh.MeshSizeFactor (Anderson used 0.22 for jvolume).
+    voids:      optional closed .stl surfaces fully inside the solid --
+                meshed as internal cavities (no tets inside). Requires
+                the .stl route for the outer surface too.
     Returns the output path.
     """
     import gmsh
@@ -22,6 +25,8 @@ def volume_mesh(input_path, output_path=None, mesh_size=1.0, algorithm3d=1,
         output_path = os.path.splitext(input_path)[0] + ".vtk"
 
     ext = os.path.splitext(input_path)[1].lower()
+    if voids and ext not in (".stl",):
+        raise ValueError("voids require the outer surface as .stl")
 
     gmsh.initialize()
     try:
@@ -41,14 +46,23 @@ def volume_mesh(input_path, output_path=None, mesh_size=1.0, algorithm3d=1,
             # triangulation as the volume boundary (no surface
             # reparametrization — that route fails on many STLs with
             # "Invalid exterior boundary mesh for parametrization").
+            # Voids: each void .stl becomes an inner surface loop, so
+            # the tet mesh excludes the cavity interiors.
             gmsh.merge(input_path)
+            outer = list(gmsh.model.getEntities(2))
+            shell_groups = [outer]
+            for vf in (voids or []):
+                before = set(gmsh.model.getEntities(2))
+                gmsh.merge(vf)
+                shell_groups.append(
+                    [s for s in gmsh.model.getEntities(2) if s not in before])
             gmsh.model.mesh.removeDuplicateNodes()
             gmsh.model.mesh.createTopology()
-            surfaces = gmsh.model.getEntities(2)
-            if not surfaces:
+            if not shell_groups[0]:
                 raise ValueError("no surface found in STL")
-            loop = gmsh.model.geo.addSurfaceLoop([s[1] for s in surfaces])
-            gmsh.model.geo.addVolume([loop])
+            loops = [gmsh.model.geo.addSurfaceLoop([s[1] for s in grp])
+                     for grp in shell_groups if grp]
+            gmsh.model.geo.addVolume(loops)  # first loop outer, rest holes
             gmsh.model.geo.synchronize()
         else:
             raise ValueError(f"Unsupported input for volume meshing: {ext}")
