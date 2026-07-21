@@ -1,4 +1,5 @@
 # AnimationPreview — scrub the finished simulation in the Rhino viewport
+# [EXPERIMENTAL — not part of the v0.1 release set; use SetupPreview + SofaShape]
 #
 # Rhino 8 Grasshopper Script component (Python 3).
 # Frame slider -> deformed body volumes, moved rigid targets, tracked

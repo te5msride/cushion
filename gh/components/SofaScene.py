@@ -201,6 +201,22 @@ if write and bodies and projDir:
         # --- placement (orient): loaders get rotation/translation;
         # numeric data (points, boxes) is transformed here
         m = bd.get("orient")
+        if not m and (bd.get("euler") or bd.get("translate")):
+            # Anderson-style: euler degrees XYZ + translation -> matrix
+            ea = [(_math.radians(v)) for v in (bd.get("euler") or [0, 0, 0])]
+            tt = bd.get("translate") or [0.0, 0.0, 0.0]
+            ca, sa = _math.cos(ea[0]), _math.sin(ea[0])
+            cb, sb = _math.cos(ea[1]), _math.sin(ea[1])
+            cg, sg = _math.cos(ea[2]), _math.sin(ea[2])
+            Rx = [[1, 0, 0], [0, ca, -sa], [0, sa, ca]]
+            Ry = [[cb, 0, sb], [0, 1, 0], [-sb, 0, cb]]
+            Rz = [[cg, -sg, 0], [sg, cg, 0], [0, 0, 1]]
+
+            def _mm(A, B):
+                return [[sum(A[i][k] * B[k][j] for k in range(3))
+                         for j in range(3)] for i in range(3)]
+            R = _mm(Rz, _mm(Ry, Rx))
+            m = [R[0] + [tt[0]], R[1] + [tt[1]], R[2] + [tt[2]]]
         placement = None
         monitor_pts = list(bd.get("monitor_points", []))
         fixations, fixations_oriented = \

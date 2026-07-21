@@ -32,6 +32,10 @@
 #                monitor points) at write time. Design flat, then wire
 #                e.g. the X output of an Orient component. Rigid only
 #                (rotation + translation, no scaling).
+#   rotate     : Vector3d — OR euler angles (degrees) about world     [item, Vector3d]
+#                X, Y, Z (applied X then Y then Z, SOFA convention —
+#                same as the reference scenes). Ignored if orient set.
+#   translate  : Vector3d — translation applied after rotate          [item, Vector3d]
 #   exportShape : int — export full deformed volume mesh every N steps [item, int]
 #                 during the sim (0/empty = off). Read back with the
 #                 SofaShape component. N=10 at dt=0.01 -> 10 frames/s.
@@ -51,6 +55,8 @@ exportShape = _g.get("exportShape")
 collisionFile = _g.get("collisionFile")
 protocol = _g.get("protocol")
 orient = _g.get("orient")
+rotate = _g.get("rotate")
+translate = _g.get("translate")
 
 if not hasattr(builtins, "_sofagh_registry"):
     builtins._sofagh_registry = {}
@@ -107,4 +113,6 @@ if geo is not None or volumeFile:
                     [orient.M10, orient.M11, orient.M12, orient.M13],
                     [orient.M20, orient.M21, orient.M22, orient.M23]]
                    if orient is not None else None),
+        "euler": [rotate.X, rotate.Y, rotate.Z] if rotate is not None else None,
+        "translate": [translate.X, translate.Y, translate.Z] if translate is not None else None,
     })
