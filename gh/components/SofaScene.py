@@ -208,12 +208,31 @@ if write and bodies and projDir:
                 raise FileNotFoundError(f"{bname}: visual file not found: {vf}")
             visuals.append({"mesh": vf})
 
-        # --- placement (orient): loaders get rotation/translation;
-        # numeric data (points, boxes) is transformed here
+        # --- placement. Two input paths:
+        #   euler path (rotate/translate): pass the euler STRAIGHT to the
+        #     loader -- never decompose, so gimbal lock (ry=90 with
+        #     rx=+/-90) can't corrupt it. Build m only to transform the
+        #     numeric data (monitor points, cable points, fixation boxes).
+        #   orient path (Transform matrix): decompose to euler for the
+        #     loader (rare exact-gimbal-lock matrices handled in _placement).
         m = bd.get("orient")
+        direct = None  # (euler, translate) when the euler path is used
         if not m and (bd.get("euler") or bd.get("translate")):
-            # Anderson-style: euler degrees XYZ + translation -> matrix
-            ea = [(_math.radians(v)) for v in (bd.get("euler") or [0, 0, 0])]
+            eul_deg = list(bd.get("euler") or [0.0, 0.0, 0.0])
+            # Exactly axis-aligned placements (euler angles that are exact
+            # multiples of 90) hit a marginal SOFA instability when the
+            # body is also driven by a protocol against a stiff fixation
+            # spring -> intermittent NaN. Nudge such angles 0.5 deg off the
+            # singularity; visually/functionally negligible.
+            nudged = False
+            for i, a in enumerate(eul_deg):
+                if abs((a % 90.0)) < 1e-3 or abs((a % 90.0) - 90.0) < 1e-3:
+                    eul_deg[i] = a + 0.5
+                    nudged = True
+            if nudged:
+                lines.append(f"{bname}: nudged axis-aligned rotation "
+                             f"+0.5deg to avoid SOFA instability -> {eul_deg}")
+            ea = [(_math.radians(v)) for v in eul_deg]
             tt = bd.get("translate") or [0.0, 0.0, 0.0]
             ca, sa = _math.cos(ea[0]), _math.sin(ea[0])
             cb, sb = _math.cos(ea[1]), _math.sin(ea[1])
@@ -227,11 +246,15 @@ if write and bodies and projDir:
                          for j in range(3)] for i in range(3)]
             R = _mm(Rz, _mm(Ry, Rx))
             m = [R[0] + [tt[0]], R[1] + [tt[1]], R[2] + [tt[2]]]
+            direct = (list(eul_deg), list(tt))
         placement = None
         monitor_pts = list(bd.get("monitor_points", []))
         fixations = [ghcommon.box_to_list(b) for b in bd.get("fixation_boxes", [])]
         if m:
-            tr, rot = _placement(m)
+            if direct:
+                rot, tr = direct
+            else:
+                tr, rot = _placement(m)
             placement = {"translation": tr, "rotation": rot}
             monitor_pts = [_apply(m, p) for p in monitor_pts]
             for cb in cables:
