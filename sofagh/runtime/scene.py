@@ -113,20 +113,14 @@ def _add_body(rootNode, body, spec):
                 youngModulus=body.get("young_modulus", 18.0))
     b.addObject("UniformMass", totalMass=body.get("total_mass", 0.05))
 
-    # Fixations, unplaced body: axis-aligned BoxROI directly.
+    # Fixations: axis-aligned BoxROI springs selected nodes to rest.
+    # (Placed bodies get a world-AABB box computed in SofaScene, so no
+    # winding-fragile orientedBox is needed.)
     for fi, box in enumerate(body.get("fixations", [])):
         b.addObject("BoxROI", name=f"fixBox{fi}", box=box, drawBoxes=True,
                     doUpdate=False)
         b.addObject("RestShapeSpringsForceField", points=f"@fixBox{fi}.indices",
                     stiffness=1e12, angularStiffness=1e12)
-    # Fixations, placed body: the controller selects node indices by
-    # inverse-transforming positions into the design frame and testing
-    # the design-space boxes (SOFA's orientedBox is winding-fragile and
-    # silently selects nothing for mirrored placements -> unconstrained
-    # body -> NaN). The spring starts empty; indices bound on step 0.
-    if body.get("fixations_design"):
-        b.addObject("RestShapeSpringsForceField", name="fixspring",
-                    points=[], stiffness=1e12, angularStiffness=1e12)
 
     # Monitor tracked points (indices bound by controller on first step)
     if body.get("monitor_points"):

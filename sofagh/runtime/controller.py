@@ -17,37 +17,6 @@ import numpy as np
 import Sofa.Core
 
 
-def _euler_matrix(deg):
-    """Rotation matrix R = Rz*Ry*Rx from euler degrees [rx, ry, rz]
-    (matches SofaScene's placement decomposition)."""
-    rx, ry, rz = [math.radians(a) for a in deg]
-    ca, sa = math.cos(rx), math.sin(rx)
-    cb, sb = math.cos(ry), math.sin(ry)
-    cg, sg = math.cos(rz), math.sin(rz)
-    Rx = np.array([[1, 0, 0], [0, ca, -sa], [0, sa, ca]])
-    Ry = np.array([[cb, 0, sb], [0, 1, 0], [-sb, 0, cb]])
-    Rz = np.array([[cg, -sg, 0], [sg, cg, 0], [0, 0, 1]])
-    return Rz @ Ry @ Rx
-
-
-def fixed_indices(positions, boxes, placement):
-    """Node indices inside any axis-aligned design box. If placed,
-    inverse-transform world positions into the design frame first."""
-    P = np.asarray(positions, dtype=float)
-    if placement:
-        R = _euler_matrix(placement["rotation"])
-        t = np.asarray(placement["translation"], dtype=float)
-        P = (P - t) @ R  # R^T (p - t), since (p-t)·R == R^T·(p-t)
-    sel = set()
-    for bx in boxes:
-        x0, y0, z0, x1, y1, z1 = bx
-        lo = np.array([min(x0, x1), min(y0, y1), min(z0, z1)])
-        hi = np.array([max(x0, x1), max(y0, y1), max(z0, z1)])
-        inside = np.all((P >= lo) & (P <= hi), axis=1)
-        sel.update(np.nonzero(inside)[0].tolist())
-    return sorted(sel)
-
-
 def closest_node_indices(points, positions):
     positions = np.asarray(positions)
     out = []
@@ -104,17 +73,9 @@ class PressureScheduleController(Sofa.Core.Controller):
             if body.get("monitor_points"):
                 monitor = getattr(body_node, "monitor_" + body["name"])
                 self.monitors.append((body_node, monitor, body["monitor_points"]))
-            if body.get("fixations_design"):
-                self.fixations.append({
-                    "node": body_node,
-                    "spring": body_node.fixspring,
-                    "boxes": body["fixations_design"],
-                    "placement": body.get("placement"),
-                })
 
         # scheduled rigid motion (SofaProtocol): keyframed offset applied
         # through rest positions -- drags the body via its fixations
-        self.fixations = []
         self.protocols = []
         for body in self.spec.get("bodies", []):
             proto = body.get("protocol")
@@ -165,14 +126,6 @@ class PressureScheduleController(Sofa.Core.Controller):
             for pm in self.target_monitors:
                 n = len(pm.getContext().points.position.value)
                 pm.indices = sorted({0, n // 3, (2 * n) // 3})
-            for fx in self.fixations:
-                idx = fixed_indices(fx["node"].tetras.position.value,
-                                    fx["boxes"], fx["placement"])
-                fx["spring"].points = idx
-                print(f"[sofagh] {fx['node'].name.value} fixed nodes: {len(idx)}")
-                if not idx:
-                    print("[sofagh] WARNING: fixation selected 0 nodes -> "
-                          "body will be unconstrained (check the box vs mesh)")
 
         # scheduled rigid motion: shift rest positions by the keyframed
         # offset delta (piecewise-linear interpolation)

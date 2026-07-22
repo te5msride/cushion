@@ -146,23 +146,7 @@ try:
                     rg.Point3d(min(bx[0], bx[3]), min(bx[1], bx[4]), min(bx[2], bx[5])),
                     rg.Point3d(max(bx[0], bx[3]), max(bx[1], bx[4]), max(bx[2], bx[5])))
                 fixBoxes.append(rg.Box(bb))
-            pl = body.get("placement")
-            xf2 = None
-            if pl:
-                import math as _m
-                ax, ay, az = [_m.radians(a) for a in pl["rotation"]]
-                xf2 = rg.Transform.Rotation(az, rg.Vector3d.ZAxis, rg.Point3d.Origin)
-                xf2 *= rg.Transform.Rotation(ay, rg.Vector3d.YAxis, rg.Point3d.Origin)
-                xf2 *= rg.Transform.Rotation(ax, rg.Vector3d.XAxis, rg.Point3d.Origin)
-                xf2 = rg.Transform.Translation(*pl["translation"]) * xf2
-            for bx in body.get("fixations_design", []):
-                x0, y0, z0, x1, y1, z1 = bx
-                bb = rg.BoundingBox(rg.Point3d(min(x0,x1),min(y0,y1),min(z0,z1)),
-                                    rg.Point3d(max(x0,x1),max(y0,y1),max(z0,z1)))
-                bp = rg.Box(bb).ToBrep()
-                if xf2 is not None:
-                    bp.Transform(xf2)
-                fixBoxes.append(bp)
+
 
         info = "; ".join(lines) if lines else \
             "no shape frames — set exportShape on SofaBody, rewrite, rerun"

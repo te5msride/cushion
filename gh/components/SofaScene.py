@@ -229,8 +229,7 @@ if write and bodies and projDir:
             m = [R[0] + [tt[0]], R[1] + [tt[1]], R[2] + [tt[2]]]
         placement = None
         monitor_pts = list(bd.get("monitor_points", []))
-        design_boxes = [ghcommon.box_to_list(b) for b in bd.get("fixation_boxes", [])]
-        fixations, fixations_design = design_boxes, []
+        fixations = [ghcommon.box_to_list(b) for b in bd.get("fixation_boxes", [])]
         if m:
             tr, rot = _placement(m)
             placement = {"translation": tr, "rotation": rot}
@@ -239,11 +238,22 @@ if write and bodies and projDir:
                 cb["points"] = [_apply(m, p) for p in cb["points"]]
                 if cb.get("pull_point"):
                     cb["pull_point"] = _apply(m, cb["pull_point"])
-            # placed body: keep the axis-aligned DESIGN boxes; the
-            # controller selects nodes by inverse-transforming positions
-            # (robust to any placement, unlike SOFA's orientedBox).
-            fixations_design = design_boxes
-            fixations = []
+            # placed body: transform the 8 design-box corners and take
+            # the world AABB -> a plain axis-aligned BoxROI. Exact for
+            # 90-degree placements; over-selects slightly for arbitrary
+            # rotations but never under-selects (SOFA's orientedBox is
+            # winding-fragile and silently selects nothing when mirrored).
+            world = []
+            for bx in fixations:
+                x0, y0, z0, x1, y1, z1 = bx
+                corners = [_apply(m, [x, y, z])
+                           for x in (x0, x1) for y in (y0, y1) for z in (z0, z1)]
+                xs = [c[0] for c in corners]
+                ys = [c[1] for c in corners]
+                zs = [c[2] for c in corners]
+                world.append([min(xs), min(ys), min(zs),
+                              max(xs), max(ys), max(zs)])
+            fixations = world
 
         spec_bodies.append({
             "name": bname,
@@ -256,7 +266,6 @@ if write and bodies and projDir:
             "total_mass": bd["total_mass"],
             "placement": placement,
             "fixations": fixations,
-            "fixations_design": fixations_design,
             "monitor_points": monitor_pts,
             "cavities": cavities,
             "cables": cables,
