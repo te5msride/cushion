@@ -41,12 +41,11 @@ finLen = chPitch-slit, finHmax = H-botT, cavRes = min(res, wall).
 
 ## Stage D — single-finger inflation test
 
-* SofaCavity: mesh 13, channel 1
-* SofaRegion: Center Box (45, 0, 1) X 46 / Y 9 / Z 1.3, E 2000
-  (strain-limiting bottom layer — the pneunet bends instead of
-  ballooning; MU-membrane mechanism)
-* SofaBody: geo 12, name finger1, E 80, nu 0.4, mass 0.02,
-  meshSize 0.4, fixation Center Box (3, 0, 7) 4/9/8, monitorPts
+* SofaCavity: mesh from step 10, channel 1
+* SofaRegion: slab from step 11, E 2000 (strain-limiting layer — the
+  pneunet bends instead of ballooning; MU-membrane mechanism)
+* SofaBody: geo from step 9, name finger1, E 80, nu 0.4, mass 0.02,
+  meshSize 0.4, fixation from step 12, monitorPts
   (x, 0, 13) x = 15…85, exportShape 10
 * PressureProfile ch1: [0, 2] / [0, 60]
 * SofaScene gravityZ 0 → write → SetupPreview (voids visible in the
