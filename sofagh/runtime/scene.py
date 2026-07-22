@@ -113,18 +113,20 @@ def _add_body(rootNode, body, spec):
                 youngModulus=body.get("young_modulus", 18.0))
     b.addObject("UniformMass", totalMass=body.get("total_mass", 0.05))
 
-    # Fixations: rigidly spring selected nodes to rest shape
+    # Fixations, unplaced body: axis-aligned BoxROI directly.
     for fi, box in enumerate(body.get("fixations", [])):
         b.addObject("BoxROI", name=f"fixBox{fi}", box=box, drawBoxes=True,
                     doUpdate=False)
         b.addObject("RestShapeSpringsForceField", points=f"@fixBox{fi}.indices",
                     stiffness=1e12, angularStiffness=1e12)
-    # oriented fixation boxes (placed bodies): p0 p1 p2 + depth
-    for fi, ob in enumerate(body.get("fixations_oriented", [])):
-        b.addObject("BoxROI", name=f"fixOBox{fi}", orientedBox=ob,
-                    drawBoxes=True, doUpdate=False)
-        b.addObject("RestShapeSpringsForceField", points=f"@fixOBox{fi}.indices",
-                    stiffness=1e12, angularStiffness=1e12)
+    # Fixations, placed body: the controller selects node indices by
+    # inverse-transforming positions into the design frame and testing
+    # the design-space boxes (SOFA's orientedBox is winding-fragile and
+    # silently selects nothing for mirrored placements -> unconstrained
+    # body -> NaN). The spring starts empty; indices bound on step 0.
+    if body.get("fixations_design"):
+        b.addObject("RestShapeSpringsForceField", name="fixspring",
+                    points=[], stiffness=1e12, angularStiffness=1e12)
 
     # Monitor tracked points (indices bound by controller on first step)
     if body.get("monitor_points"):

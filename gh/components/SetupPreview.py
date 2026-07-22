@@ -143,8 +143,15 @@ try:
                         rg.Point3d(min(bx[0], bx[3]), min(bx[1], bx[4]), min(bx[2], bx[5])),
                         rg.Point3d(max(bx[0], bx[3]), max(bx[1], bx[4]), max(bx[2], bx[5])))
                     fixBoxes.append(rg.Box(bb))
-                for ob in body.get("fixations_oriented", []):
-                    fixBoxes.append(_oriented_box(ob))
+                for bx in body.get("fixations_design", []):
+                    x0, y0, z0, x1, y1, z1 = bx
+                    bb = rg.BoundingBox(rg.Point3d(min(x0,x1),min(y0,y1),min(z0,z1)),
+                                        rg.Point3d(max(x0,x1),max(y0,y1),max(z0,z1)))
+                    box = rg.Box(bb)
+                    b2 = box.ToBrep()
+                    if xf is not None:
+                        b2.Transform(xf)
+                    fixBoxes.append(b2)
                 counts.append(f"{body['name']}: vol {len(volumes)}, "
                               f"cav {len(body.get('cavities', []))}, "
                               f"reg {len(body.get('regions', []))}")

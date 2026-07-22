@@ -229,8 +229,8 @@ if write and bodies and projDir:
             m = [R[0] + [tt[0]], R[1] + [tt[1]], R[2] + [tt[2]]]
         placement = None
         monitor_pts = list(bd.get("monitor_points", []))
-        fixations, fixations_oriented = \
-            [ghcommon.box_to_list(b) for b in bd.get("fixation_boxes", [])], []
+        design_boxes = [ghcommon.box_to_list(b) for b in bd.get("fixation_boxes", [])]
+        fixations, fixations_design = design_boxes, []
         if m:
             tr, rot = _placement(m)
             placement = {"translation": tr, "rotation": rot}
@@ -239,16 +239,10 @@ if write and bodies and projDir:
                 cb["points"] = [_apply(m, p) for p in cb["points"]]
                 if cb.get("pull_point"):
                     cb["pull_point"] = _apply(m, cb["pull_point"])
-            # axis-aligned design boxes become oriented world boxes:
-            # face at mid-depth (p0,p1,p2) + symmetric depth
-            fixations_oriented = []
-            for bx in fixations:
-                x0, y0, z0, x1, y1, z1 = bx
-                zm = (z0 + z1) / 2.0
-                p0 = _apply(m, [x0, y0, zm])
-                p1 = _apply(m, [x1, y0, zm])
-                p2 = _apply(m, [x1, y1, zm])
-                fixations_oriented.append(p0 + p1 + p2 + [abs(z1 - z0)])
+            # placed body: keep the axis-aligned DESIGN boxes; the
+            # controller selects nodes by inverse-transforming positions
+            # (robust to any placement, unlike SOFA's orientedBox).
+            fixations_design = design_boxes
             fixations = []
 
         spec_bodies.append({
@@ -262,7 +256,7 @@ if write and bodies and projDir:
             "total_mass": bd["total_mass"],
             "placement": placement,
             "fixations": fixations,
-            "fixations_oriented": fixations_oriented,
+            "fixations_design": fixations_design,
             "monitor_points": monitor_pts,
             "cavities": cavities,
             "cables": cables,
