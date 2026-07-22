@@ -6,30 +6,38 @@ automatically (SofaBody.hollow, default on) — no boolean difference
 anywhere. One finger designed flat, oriented twice into a gripper,
 carried by a SofaProtocol pick-and-place.
 
-## Stage A — finger body (Graph Mapper #1 = overall profile)
+## Stage A — slitted (fast-PneuNet) body
 
-1. Range (0→1, 19 steps) → t
-2. Graph Mapper #1 (Bezier) ← t — finger height along length
-3. Remap Numbers → 10→14 = section heights h
-4. Construct Point (90·t, 0, 0) → YZ Plane at each station
-5. Rectangle on those planes: X domain −8→8, Y domain 0→h
-6. Loft (Normal) → Cap Holes → solid finger Brep (L 90, W 16)
+Master sliders: L 90, W 16, H 14, nCham 10, wall 2, botT 4, slit 2,
+res 2. Derived Expressions: finRegion = L-8, chPitch = finRegion/nCham,
+finLen = chPitch-slit, finHmax = H-botT, cavRes = min(res, wall).
 
-## Stage B — chamber network (Graph Mapper #2 = chamber sizes)
+1. Range (0->1, nCham-1 steps) -> Graph Mapper (fin/chamber profile)
+   -> Remap to [0.6*finHmax, finHmax] = fin heights hi
+2. Series (start 4+chPitch/2, step chPitch, count nCham) = finX
+3. Fins: Center Box at (finX, 0, botT+hi/2), half-extents
+   (finLen/2, W/2, hi/2)
+4. Base: Center Box at (L/2, 0, botT/2), halves (L/2, W/2, botT/2)
+5. Solid Union (fins + base) = BODY -- air slits between fins are what
+   make the fast-PneuNet curl at low pressure
 
-7. Series: start 12, step 9.5, count 8 → chamber x positions
-8. Range(0→1, 8) → Graph Mapper #2 → Remap 5→9 → chamber heights h_i
-9. Construct Point (x_i, 0, 3 + h_i/2) → Center Box X 2.75 / Y 6 / Z h_i/2
-   (5.5 × 12 × h_i chambers; 2 mm side walls, sits above the 2 mm
-   bottom layer)
-10. Channel: Center Box at (45, 0, 4), X 38 / Y 2 / Z 1.5
-11. Solid Union (chambers + channel) → one cavity-network Brep
+## Stage B — chamber network
 
-## Stage C — meshes (native refinement showcase)
+6. Chambers: Center Box at (finX, 0, botT+(hi-wall-0.5)/2), halves
+   ((finLen-2*wall)/2, (W-2*wall)/2, (hi-wall+0.5)/2) -- dip 0.5 into
+   the base to meet the channel
+7. Channel: Center Box at (L/2, 0, botT-1), halves
+   ((finRegion-slit)/2, 1.5, 1)
+8. Solid Union (chambers + channel) = CAVITY (one network, channel 1)
 
-12. TriRemesh (finger Brep, TargetLength ≈ 2.5) → SofaBody.geo
-13. TriRemesh (cavity Brep, TargetLength ≈ 2) → SofaCavity.geo
-    TargetLength sliders = FEM surface resolution, fully native.
+## Stage C — meshes and layers
+
+9. TriRemesh (BODY, TargetLength res) -> SofaBody.geo
+10. TriRemesh (CAVITY, TargetLength cavRes) -> SofaCavity.geo
+11. Strain layer: Center Box (L/2, 0, 0.6), halves (L/2+1, W/2+1, 0.8)
+    -> SofaRegion.geo, E 2000
+12. Fixation: Center Box (2, 0, H/2), halves (4, W/2+2, H/2+2)
+13. Monitors: Series x (0.15*L, step 0.8*L/5, 6) -> points (x, 0, botT+2)
 
 ## Stage D — single-finger inflation test
 
