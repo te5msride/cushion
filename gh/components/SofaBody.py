@@ -12,6 +12,13 @@
 #   nu         : float — Poisson ratio (default 0.4)                  [item, float]
 #   mass       : float — total mass, kg (MU: 0.050)                   [item, float]
 #   meshSize   : float — gmsh MeshSizeFactor (MU jvolume: 0.22)       [item, float]
+#   gmshOpts   : list of "key = value" strings (or a dict) — extra    [list, str]
+#                gmsh options, defaults MU-matching. Friendly keys +
+#                names accepted, e.g.  algo2d = MeshAdapt / algo3d =
+#                Delaunay / recomb = Blossom / smoothing = 1 /
+#                sizeFactor = 0.5 / order = 1. Raw gmsh names also work
+#                ("Mesh.Algorithm = 1"). Overrides meshSize if it sets
+#                MeshSizeFactor.
 #   cavities   : list of SofaCavity dicts                             [list, No Type Hint]
 #   tendons    : list of SofaTendon dicts                             [list, No Type Hint]
 #   regions    : list of SofaRegion dicts                             [list, No Type Hint]
@@ -61,6 +68,69 @@ orient = _g.get("orient")
 hollow = _g.get("hollow")
 rotate = _g.get("rotate")
 translate = _g.get("translate")
+gmshOpts = _g.get("gmshOpts")
+
+
+# --- gmsh option parsing --------------------------------------------------
+# gmshOpts accepts: a dict, or a list/newline string of "key = value" lines.
+# Keys may be friendly aliases or raw gmsh names ("Mesh.Algorithm").
+# Numeric values pass through; a few string names are mapped for convenience.
+_GMSH_ALIAS = {
+    "algo2d": "Mesh.Algorithm", "algorithm2d": "Mesh.Algorithm",
+    "algo3d": "Mesh.Algorithm3D", "algorithm3d": "Mesh.Algorithm3D",
+    "recomb": "Mesh.RecombinationAlgorithm",
+    "recombination": "Mesh.RecombinationAlgorithm",
+    "recombineall": "Mesh.RecombineAll",
+    "subdivision": "Mesh.SubdivisionAlgorithm",
+    "smoothing": "Mesh.Smoothing",
+    "sizefactor": "Mesh.MeshSizeFactor", "meshsizefactor": "Mesh.MeshSizeFactor",
+    "minsize": "Mesh.CharacteristicLengthMin",
+    "maxsize": "Mesh.CharacteristicLengthMax",
+    "order": "Mesh.ElementOrder", "elementorder": "Mesh.ElementOrder",
+    "incomplete": "Mesh.SecondOrderIncomplete",
+}
+_GMSH_NAMES = {
+    "Mesh.Algorithm": {"meshadapt": 1, "automatic": 2, "delaunay": 5,
+                       "frontal": 6, "frontal-delaunay": 6, "bamg": 7},
+    "Mesh.Algorithm3D": {"delaunay": 1, "frontal": 4, "netgen": 4,
+                         "mmg3d": 7, "hxt": 10},
+    "Mesh.RecombinationAlgorithm": {"simple": 0, "blossom": 1,
+                                    "simplefull": 2, "blossomfull": 3},
+    "Mesh.SubdivisionAlgorithm": {"none": 0, "all": 1, "allquads": 2},
+}
+
+
+def _parse_gmsh_opts(raw):
+    if raw is None:
+        return None
+    items = []
+    if isinstance(raw, dict):
+        items = list(raw.items())
+    else:
+        seq = raw if isinstance(raw, (list, tuple)) else str(raw).splitlines()
+        for line in seq:
+            s = str(line).strip()
+            if not s or s.startswith("#"):
+                continue
+            sep = "=" if "=" in s else (":" if ":" in s else None)
+            if not sep:
+                continue
+            k, v = s.split(sep, 1)
+            items.append((k.strip(), v.strip()))
+    out = {}
+    for k, v in items:
+        key = _GMSH_ALIAS.get(str(k).strip().lower(), str(k).strip())
+        vs = str(v).strip()
+        names = _GMSH_NAMES.get(key)
+        if names and vs.lower().replace("-", "").replace(" ", "") in names:
+            out[key] = names[vs.lower().replace("-", "").replace(" ", "")]
+        else:
+            try:
+                out[key] = float(vs)
+            except (TypeError, ValueError):
+                raise ValueError(
+                    "gmshOpts: cannot parse value %r for %r" % (v, key))
+    return out or None
 
 if not hasattr(builtins, "_sofagh_registry"):
     builtins._sofagh_registry = {}
@@ -101,6 +171,7 @@ if geo is not None or volumeFile:
         "poisson_ratio": float(nu) if nu else 0.4,
         "total_mass": float(mass) if mass else 0.05,
         "mesh_size": float(meshSize) if meshSize else 1.0,
+        "gmsh_opts": _parse_gmsh_opts(gmshOpts),
         "cavity_defs": [_resolve(c) for c in (cavities or []) if c],
         "tendon_defs": [_resolve(t) for t in (tendons or []) if t],
         "region_defs": [_resolve(r) for r in (regions or []) if r],

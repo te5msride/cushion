@@ -284,6 +284,7 @@ if write and bodies and projDir:
             "volume_vtk": vol_vtk,
             "volume_voids": voids,
             "mesh_size": bd.get("mesh_size", 1.0),
+            "gmsh_opts": bd.get("gmsh_opts") or None,
             "young_modulus": bd["young_modulus"],
             "poisson_ratio": bd["poisson_ratio"],
             "total_mass": bd["total_mass"],

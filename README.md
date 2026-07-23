@@ -42,7 +42,8 @@ reference, installation, workflow example.
   SofaValidation plugins (all included in the official release bundle)
 * **Python 3.10** on the system (SofaPython3 v24.06 is built against it)
   with `numpy`
-* Internet on first run (Rhino auto-installs the `gmsh` Python package)
+* **gmsh** in Rhino's CPython — install once, manually:
+  `"<rhino-python>" -m pip install gmsh` (see [docs/INSTALL.md](docs/INSTALL.md) §5)
 
 Full platform-specific steps: [docs/INSTALL.md](docs/INSTALL.md).
 

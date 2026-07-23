@@ -73,9 +73,9 @@ def _add_target(rootNode, tgt):
     col.addObject("MeshSTLLoader", name="loader", filename=_abspath(tgt["mesh"]))
     col.addObject("MeshTopology", src="@loader")
     col.addObject("MechanicalObject", name="points")
-    col.addObject("TriangleCollisionModel", name="target")
+    col.addObject("TriangleCollisionModel", name="target_tri")
     col.addObject("LineCollisionModel", name="target")
-    col.addObject("PointCollisionModel", name="target")
+    col.addObject("PointCollisionModel", name="target_pt")
     col.addObject("RigidMapping")
     # 3-point pose track (indices bound by the controller) so
     # AnimationPreview can replay the target's rigid motion
@@ -126,7 +126,7 @@ def _add_body(rootNode, body, spec):
     if body.get("monitor_points"):
         b.addObject("Monitor", name="monitor_" + body["name"], template="Vec3d",
                     listening=1, showPositions=True, PositionsColor="1 0 1 1",
-                    sizeFactor=10, ExportPositions=True,
+                    sizeFactor=10, ExportPositions=True, ExportForces=True,
                     fileName=os.path.join(HERE, "monitor", body["name"]))
 
     # Full deformed-shape export (legacy VTK series, read back by SofaShape)
@@ -200,10 +200,12 @@ def _add_body(rootNode, body, spec):
                       filename=_abspath(body["collision_mesh"]), **place)
         col.addObject("MeshTopology", src="@loader", name="topo")
         col.addObject("MechanicalObject", name="collisMech")
-        col.addObject("TriangleCollisionModel", selfCollision=False)
+        col.addObject("TriangleCollisionModel", selfCollision=False,
+                      name=body["name"] + "_tri")
         col.addObject("LineCollisionModel", selfCollision=False,
                       name=body.get("contact_group", body["name"]))
-        col.addObject("PointCollisionModel", selfCollision=False)
+        col.addObject("PointCollisionModel", selfCollision=False,
+                      name=body["name"] + "_pt")
         col.addObject("BarycentricMapping")
 
     # Visual surfaces (barycentric-mapped onto the deforming volume)
@@ -271,6 +273,42 @@ def createScene(rootNode):
 
     for body in spec.get("bodies", []):
         _add_body(rootNode, body, spec)
+
+    # ContactListeners: report contact points + count per (body, target)
+    # pair to the controller (B1 grasp contact map). NOTE: ContactListener
+    # exposes contact GEOMETRY only -- points/count/normals, not the
+    # resolved contact force (that is the constraint solver's lambda).
+    #
+    # LocalMinDistance culls face-face contacts, so a Triangle-Triangle
+    # listener sees ~nothing. Watch every element pair that actually fires
+    # (point-into-face + edge-edge, both orders) and aggregate them under
+    # one base name "cl_<body>__<target>" in the controller. LocalMinDistance
+    # assigns each physical contact to a single element pair, so summing
+    # across pairs does not double-count.
+    listener_map = []  # [base_name, listener_name]
+    if contacts.get("enabled", True):
+        for body in spec.get("bodies", []):
+            if not body.get("collision_mesh"):
+                continue
+            bn = body["name"]
+            b_line = body.get("contact_group", bn)
+            for tgt in spec.get("targets", []):
+                tn = tgt["name"]
+                base = "cl_%s__%s" % (bn, tn)
+                # (suffix, body model, target model)
+                combos = [
+                    ("pt_tri", "%s_pt" % bn, "target_tri"),
+                    ("tri_pt", "%s_tri" % bn, "target_pt"),
+                    ("ln_ln", b_line, "target"),
+                ]
+                for suffix, bmodel, tmodel in combos:
+                    nm = "%s_%s" % (base, suffix)
+                    rootNode.addObject(
+                        "ContactListener", name=nm,
+                        collisionModel1="@/%s/collision/%s" % (bn, bmodel),
+                        collisionModel2="@/%s/collision/%s" % (tn, tmodel))
+                    listener_map.append([base, nm])
+    spec["contact_listeners"] = listener_map
 
     rootNode.addObject(PressureScheduleController(node=rootNode, spec=spec,
                                                   here=HERE))
