@@ -1,5 +1,7 @@
 <p align="center">
-  <img src="docs/manual/figures/textlogo.svg" width="360" alt="Cushion"/>
+  <img src="docs/manual/figures/logo.svg" width="200" alt="Cushion logo"/>
+  <br/>
+  <img src="docs/manual/figures/textlogo.svg" width="300" alt="Cushion"/>
 </p>
 
 **Soft robotics simulation in Grasshopper, powered by [SOFA](https://www.sofa-framework.org/).**
