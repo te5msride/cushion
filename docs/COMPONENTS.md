@@ -32,6 +32,7 @@ General rules:
 | nu | float | item | Poisson ratio (default 0.4) |
 | mass | float | item | total mass, kg |
 | meshSize | float | item | gmsh MeshSizeFactor (MU jvolume: 0.22) |
+| gmshOpts | str | list | extra gmsh options as `key = value` lines (defaults MU-matching): friendly keys/names (`algo2d = MeshAdapt`, `algo3d = Delaunay`, `smoothing = 1`, `sizeFactor = 0.5`) or raw gmsh names (`Mesh.Algorithm = 1`); overrides meshSize if it sets MeshSizeFactor |
 | cavities | str/none | list | from SofaCavity |
 | tendons | str/none | list | from SofaTendon |
 | regions | str/none | list | from SofaRegion |
@@ -46,8 +47,14 @@ General rules:
 | visualGeo | Geometry | list | display-only surfaces (e.g. lattice), barycentric-mapped |
 | visualFiles | str | list | display-only `.stl` paths, used as-is |
 | visualFaces | int | item | decimate visualGeo to this face count on export (0 = off) |
+| protocol | str | item | keyframed rigid motion from SofaProtocol; needs fixations (the motion drags the body by its clamps) |
+| exportShape | int | item | export the full deformed volume every N steps (0 = off); read back with SofaShape (N=10 at dt 0.01 → 10 frames/s of sim) |
 
 Output: `body` (object).
+
+Monitor points also record **force**: SofaResults returns the nodal force
+(mN) at each monitorPt, so points placed on a contact pad read out the grip
+reaction.
 
 ## SofaCavity — pneumatic chamber
 
@@ -180,7 +187,9 @@ Custom Preview components with per-role colors.
 | refresh | bool | item | |
 
 Outputs: `volumes` (FEM surfaces), `cavities`, `regions`, `targets`
-(Mesh lists), `monitorPts` (points), `fixBoxes` (boxes), `info`.
+(Mesh lists), `tendonCrvs` (cable routing paths), `tendonChs` (channel per
+tendon — Text Tag the start points), `monitorPts` (points), `fixBoxes`
+(boxes), `info`.
 
 ## SofaTarget — rigid interaction object
 
@@ -256,9 +265,20 @@ Output: `status` (str). Log written to `<projDir>/runsofa.log`.
 | refresh | bool | item | toggle to re-read |
 
 Outputs: `info` (read first), `times`, `points` (DataTree — branch per
-frame, items = tracked points), `lastPts` (final frame), `pTimes`,
+frame, items = tracked points), `lastPts` (final frame), `forces`
+(DataTree of Vector3d — nodal force in mN at the monitor points, branch per
+frame; the grip reaction where points sit on a contact pad), `pTimes`,
 `pressures` (DataTree — branch per channel), and when tendons exist:
 `cableNames`, `cableDisp` (mm), `cableForce` (mN) — branch per cable.
 
+When the scene has targets and collision, a contact map comes back too:
+`contactPairs` (list of `body__target` names), `contactCount` (DataTree —
+contacts per step, branch per pair), `contactTimes` (branch per pair), and
+`contactPts` (DataTree — contact locations on the body surface, branch per
+`pair; frame`). This is contact **geometry** — where and how many — not the
+resolved contact force; for a force reading use `forces` at monitor points
+on the pad.
+
 Typical use: `points` → Tree Branch + slider = scrub motion; Flip
-Matrix → Polyline = trajectories; `pressures` → Quick Graph.
+Matrix → Polyline = trajectories; `pressures` → Quick Graph;
+`contactPts` → point cloud at a frame = the grasp contact map.

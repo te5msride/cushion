@@ -4,19 +4,32 @@
   <img src="docs/manual/figures/textlogo.svg" width="300" alt="Cushion"/>
 </p>
 
-**Soft robotics simulation in Grasshopper, powered by [SOFA](https://www.sofa-framework.org/).**
+<p align="center">
+  <b>Cushion</b> · <i>noun</i><br>
+  A soft pad or pillow, usually set on a sofa, that makes a rigid structure
+  comfortable to work with.<br>
+  Also: an intermediate layer that softens the interface between two hard things.
+</p>
 
-Define a deformable body, its pneumatic cavities and/or tendons, and an
-actuation schedule as Grasshopper components; Cushion meshes the
-geometry, writes a runnable SOFA scene, launches the simulation, and
-pulls trajectories, forces, and deformed shapes back into Grasshopper.
+<p align="center"><i>Cushion is the soft layer between Rhino and SOFA.</i></p>
+
+---
+
+**Soft-robotics simulation in Grasshopper, powered by [SOFA](https://www.sofa-framework.org/).**
+
+You describe a soft robot the way you already model in Grasshopper — a
+deformable body, the pneumatic cavities or tendons that drive it, and a
+schedule of pressures or pulls over time. Cushion meshes the geometry,
+writes a runnable SOFA scene, launches the simulation, and brings the
+results — trajectories, forces, contacts, deformed shapes — back onto the
+canvas.
 
 *Developed by Trevor Exley and Anderson Brazil Nardin.*
 
-Scene structure follows the Monolithic Unit soft-robotics pipeline
+The scene structure follows the Monolithic Unit soft-robotics pipeline
 (Exley, Nardin, Trunin, Cafiso, Beccai — [arXiv:2511.13120](https://arxiv.org/abs/2511.13120)):
-corotational tet FEM, homogenized lattice material, MeshROI-based local
-stiffening, SoftRobots pressure/cable constraints.
+corotational tetrahedral FEM, a homogenized lattice material, MeshROI-based
+local stiffening, and SoftRobots pressure and cable constraints.
 
 ```
 GH geometry ──► STL/STEP ──► gmsh tets ──► scene.json + input.csv
@@ -26,95 +39,135 @@ GH geometry ──► STL/STEP ──► gmsh tets ──► scene.json + input.
 
 ## Status
 
-Working prototype (v0.1). Tested on Windows 11 + macOS with Rhino 8 and
-SOFA v24.06. Interface may change.
+Working prototype (v0.1), tested on Windows 11 and macOS with Rhino 8 and
+SOFA v24.06. The interface may still change.
 
-This project is licensed under the GNU Lesser General Public License
-v2.1 or later — see [LICENSE](LICENSE).
+Licensed under the GNU Lesser General Public License v2.1 or later — see
+[LICENSE](LICENSE).
 
-📖 **[Manual (PDF)](docs/manual/Cushion_Manual.pdf)** — component
-reference, installation, workflow example.
+📖 **[Manual (PDF)](docs/manual/Cushion_Manual.pdf)** — component reference,
+installation, and a worked example.
 
 ## Requirements
 
-* **Rhino 8** (Grasshopper Script components, Python 3 mode)
-* **SOFA v24.06 binaries** with SofaPython3, SoftRobots, STLIB,
-  SofaValidation plugins (all included in the official release bundle)
-* **Python 3.10** on the system (SofaPython3 v24.06 is built against it)
-  with `numpy`
-* **gmsh** in Rhino's CPython — install once, manually:
-  `"<rhino-python>" -m pip install gmsh` (see [docs/INSTALL.md](docs/INSTALL.md) §5)
+* **Rhino 8** — Grasshopper Script components, Python 3 mode. Document units
+  in millimeters.
+* **SOFA v24.06.00** binaries with SofaPython3, SoftRobots, STLIB, and
+  SofaValidation (all in the official release bundle):
+  [github.com/sofa-framework/sofa/releases/tag/v24.06.00](https://github.com/sofa-framework/sofa/releases/tag/v24.06.00)
+* **Python 3.10** on the system (SofaPython3 v24.06 is built against it) with
+  `numpy` — this is SOFA's interpreter, separate from Rhino's.
+* **gmsh** in Rhino's own CPython — install it once:
+  `"<rhino-python>" -m pip install gmsh` (see [docs/INSTALL.md](docs/INSTALL.md) §5).
 
 Full platform-specific steps: [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Quickstart (inflate a cylinder)
 
-1. Install per [docs/INSTALL.md](docs/INSTALL.md); clone/copy this repo.
-2. In Grasshopper, create Script components from `gh/components/*.py`
-   (paste script, add inputs/outputs per the header comment —
-   see [docs/COMPONENTS.md](docs/COMPONENTS.md) for exact signatures).
-3. Model a solid cylinder (r 15, h 100 mm) → `SofaBody.geo`.
-   Smaller closed cylinder inside → `SofaCavity.geo`, channel 1.
-4. Box around one end cap → `SofaBody.fixations`; a few points along
-   the axis → `SofaBody.monitorPts`.
+1. Install per [docs/INSTALL.md](docs/INSTALL.md); clone or copy this repo.
+2. In Grasshopper, create Script components from `gh/components/*.py` (paste
+   the script, add inputs/outputs per the header comment — exact signatures
+   in [docs/COMPONENTS.md](docs/COMPONENTS.md)). Or just open one of the
+   example definitions below, where the components are already wired.
+3. Model a solid cylinder (r 15, h 100 mm) → `SofaBody.geo`. Put a smaller
+   closed cylinder inside → `SofaCavity.geo`, channel 1.
+4. Box around one end cap → `SofaBody.fixations`; a few points along the
+   axis → `SofaBody.monitorPts`.
 5. `PressureProfile`: channel 1, times `[0, 1.0]`, values `[0, 20]` (kPa).
-6. `SofaScene`: wire body + profile, set `projDir` (local disk folder),
-   `repo` (this folder), `gravityZ` 0, toggle `write` → True.
-7. `SofaRun`: `sofaRoot` = your SOFA folder, `gui` True, `run` → True.
-   Press **Animate** in the SOFA window.
-8. `SofaResults`: wire `scenePath` + `bodyName`, toggle `refresh` →
-   trajectories return as a DataTree (branch per frame).
+6. `SofaScene`: wire the body and the profile, set `projDir` (a local disk
+   folder), `repo` (this folder), `gravityZ` 0, toggle `write` → True.
+7. `SofaRun`: `sofaRoot` = your SOFA folder, `gui` True, `run` → True. Press
+   **Animate** in the SOFA window.
+8. `SofaResults`: wire `scenePath` and `bodyName`, toggle `refresh` → the
+   trajectories come back as a DataTree, one branch per frame.
+
+## Examples
+
+Two worked definitions live in [`examples/`](examples), both built entirely
+from native Grasshopper blocks — no external mesh files. Each has a `.md`
+walkthrough alongside the `.gh`.
+
+**[Tendon continuum robot](examples/continuum_robot.md)** — a cylindrical
+backbone driven by three cables at 0° / 120° / 240°. A single run sweeps the
+pull direction a full turn while the Monitor logs the backbone every
+timestep, so the visited configurations trace out the workspace; the convex
+hull of the tip cloud gives its bounds. Nothing to touch, so it runs fast —
+a good first sim.
+
+**[PneuNet two-finger gripper](examples/pneunet_gripper.md)** — a
+fast-PneuNet finger whose chambers and profile are shaped by Graph Mappers
+and meshed with TriRemesh; the cavities become internal voids automatically
+(`SofaBody.hollow`), so there is no boolean subtraction anywhere. One finger
+is designed flat, oriented twice into a gripper, and carried through a
+pick-and-place by a `SofaProtocol` while the chambers inflate — it descends,
+grips an object, and lifts it.
 
 ## Components
 
 | Component | Role |
 |---|---|
-| `SofaBody` | Deformable FEM body: solid + material + fixations + monitor points |
-| `SofaCavity` | Pneumatic chamber (SurfacePressureConstraint), channel-driven |
+| `SofaBody` | Deformable FEM body: solid, material, fixations, monitor points, placement |
+| `SofaCavity` | Pneumatic chamber (SurfacePressureConstraint), driven by channel |
 | `SofaTendon` | Cable/tendon path (CableConstraint), displacement- or force-driven |
 | `SofaRegion` | Locally stiffened sub-region (membrane/sensor), closed mesh or auto-shell |
-| `PressureProfile` | Actuation keyframes for one channel (linear-interp, resampled) |
+| `PressureProfile` | Actuation keyframes for one channel (linear-interpolated, resampled) |
+| `SofaProtocol` | Keyframed rigid motion of a whole body (pick-and-place); drags it by its fixations |
 | `SofaTarget` | Rigid interaction object (graspable target, obstacle) |
-| `SofaScene` | Writes the runnable project folder (meshes, scene.json, input.csv); optional camera + targets |
+| `SofaScene` | Writes the runnable project (meshes, scene.json, input.csv); optional camera and targets |
 | `SofaRun` | Launches runSofa (GUI or headless batch) |
-| `SofaResults` | Parses trajectories + actuation history back into GH |
+| `SofaResults` | Reads trajectories, forces, contacts, and actuation history back into GH |
 | `SofaShape` | Rebuilds the deformed body surface at any exported frame |
-| `SetupPreview` | Rebuilds the whole written scene (incl. file-path meshes and the gmsh volume) as Rhino geometry |
+| `SetupPreview` | Rebuilds the whole written scene as Rhino geometry, gmsh volume included |
 
-Details, input tables, modeling notes: [docs/COMPONENTS.md](docs/COMPONENTS.md).
+`SofaTendons` and `SofaProfiles` are tree-input variants that drive several
+channels from one component. Details, input tables, and modeling notes:
+[docs/COMPONENTS.md](docs/COMPONENTS.md).
 
 ## Units & conventions
 
-mm / kPa / kg / s everywhere; gravity −9810 mm/s² in z (SOFA has no
-intrinsic up-axis — the gravity vector defines it; geometry passes
-Rhino→SOFA 1:1, no transform). Rhino document units must be millimeters.
+Millimeters, kPa, kg, and seconds throughout; gravity is −9810 mm/s² in z.
+SOFA has no built-in up-axis — the gravity vector defines it, and geometry
+passes from Rhino to SOFA 1:1 with no transform, so the Rhino document must
+be in millimeters.
 
-Young's moduli are effective values: for lattice bodies use the
-homogenized modulus (Monolithic Unit 1.0×: 18.34 kPa); heavy lattice
-geometry goes into `visualGeo` only — it is displayed (barycentric-
-mapped), never meshed or simulated.
+Young's moduli are effective values: lattice bodies use the homogenized
+modulus (Monolithic Unit 1.0×: 18.34 kPa). Heavy lattice geometry belongs in
+`visualGeo` only — it is displayed (barycentric-mapped), never meshed or
+simulated.
+
+## Common issues
+
+Most problems announce themselves in a component's `info` output or in
+`<projDir>/runsofa.log` — read those first. The ones you're most likely to
+hit:
+
+* **Meshing fails ("PLC error", "a segment and a facet intersect").** Two
+  input surfaces overlap — usually a cavity poking through a thin body wall.
+  Keep cavities fully inside the body, keep walls ≥ 2 mm, and refine the mesh
+  (smaller `meshSize` / TriRemesh length, ≤ half the wall thickness).
+* **Body free-falls or drifts instead of deforming.** The fixation box isn't
+  catching any mesh nodes, or gravity is on with nothing clamped. Make the
+  box swallow part of the mesh, or set `gravityZ` 0.
+* **Grasp target slips through or flies away.** Check the collision meshes are
+  wired on both the body and target, slow the approach, and confirm a floor
+  catches the object.
+* **`SofaResults` is empty.** `write` was left off, the sim wasn't animated,
+  no `monitorPts` were wired, or `bodyName` doesn't match.
+
+Full, field-tested list: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
 ## Repo layout
 
 ```
 sofagh/          pure-Python core (no Rhino): meshing, project writer,
                  runner, results parsers — also usable from plain Python
-sofagh/runtime/         generic SOFA scene + controller (copied into projects)
+sofagh/runtime/  generic SOFA scene + controller (copied into projects)
 gh/ghcommon.py   RhinoCommon helpers (STL/STEP export, shell offset)
 gh/components/   the Grasshopper component scripts
-docs/            install, component reference, troubleshooting
-examples/        walkthroughs incl. Monolithic Unit reproduction
+docs/            install, component reference, troubleshooting, manual
+examples/        the two walkthroughs above
+dist/            compiled Grasshopper plugin (.gha)
 ```
 
-Any written project folder is standalone:
+Any written project folder stands on its own:
 `python -m sofagh.runner path/to/project/scene.py [--batch]`.
-
-## Roadmap
-
-* `.ghuser` component set → ScriptEditor project (`.rhproj`) → compiled
-  `.gha` via Yak
-* Tier 2: live bridge (headless SOFA loop streaming node positions into
-  the Rhino viewport)
-* Rigid grasp targets, contact rules component
-* Homogenization helper (virtual compression test → effective modulus)
-* Full deformed-mesh playback (VTK export)
