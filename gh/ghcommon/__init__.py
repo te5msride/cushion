@@ -20,6 +20,8 @@ def to_mesh(geo, max_edge=0.0):
         m = geo.DuplicateMesh()
     elif isinstance(geo, rg.Extrusion):
         return to_mesh(geo.ToBrep(), max_edge)
+    elif isinstance(geo, rg.Box):
+        return to_mesh(geo.ToBrep(), max_edge)
     elif isinstance(geo, rg.Brep):
         mp = rg.MeshingParameters.QualityRenderMesh
         if max_edge and max_edge > 0:

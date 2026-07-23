@@ -9,7 +9,7 @@ import os
 
 
 def volume_mesh(input_path, output_path=None, mesh_size=1.0, algorithm3d=1,
-                verbose=False, voids=None):
+                verbose=False, voids=None, gmsh_opts=None):
     """Tet-mesh a solid and write a legacy VTK file SOFA's MeshVTKLoader reads.
 
     input_path: .step/.stp (preferred, exact geometry) or closed .stl surface.
@@ -67,16 +67,27 @@ def volume_mesh(input_path, output_path=None, mesh_size=1.0, algorithm3d=1,
         else:
             raise ValueError(f"Unsupported input for volume meshing: {ext}")
 
-        gmsh.option.setNumber("Mesh.Algorithm3D", algorithm3d)  # 1=Delaunay, 4=Netgen
-        gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 3)
-        gmsh.option.setNumber("Mesh.RecombineAll", 0)
-        gmsh.option.setNumber("Mesh.SubdivisionAlgorithm", 0)
-        gmsh.option.setNumber("Mesh.Smoothing", 1)
-        gmsh.option.setNumber("Mesh.MeshSizeFactor", mesh_size)
-        gmsh.option.setNumber("Mesh.CharacteristicLengthMin", 0)
-        gmsh.option.setNumber("Mesh.CharacteristicLengthMax", 1e22)
-        gmsh.option.setNumber("Mesh.ElementOrder", 1)
-        gmsh.option.setNumber("Mesh.SecondOrderIncomplete", 0)
+        # gmsh options: MU-matching defaults, overridable per-body via
+        # gmsh_opts (keys are gmsh option names, e.g. {"Mesh.Algorithm": 1}).
+        # mesh_size / algorithm3d kept as explicit args for back-compat;
+        # gmsh_opts wins if it also sets MeshSizeFactor / Algorithm3D.
+        opts = {
+            "Mesh.Algorithm": 6,             # 2D: 1=MeshAdapt 6=Frontal-Delaunay
+            "Mesh.Algorithm3D": algorithm3d,  # 3D: 1=Delaunay 4=Netgen
+            "Mesh.RecombinationAlgorithm": 3, # 1=Blossom 3=Blossom full-quad
+            "Mesh.RecombineAll": 0,           # off -> tets (recomb never runs)
+            "Mesh.SubdivisionAlgorithm": 0,   # None
+            "Mesh.Smoothing": 1,
+            "Mesh.MeshSizeFactor": mesh_size,
+            "Mesh.CharacteristicLengthMin": 0,
+            "Mesh.CharacteristicLengthMax": 1e22,
+            "Mesh.ElementOrder": 1,
+            "Mesh.SecondOrderIncomplete": 0,
+        }
+        if gmsh_opts:
+            opts.update({k: v for k, v in gmsh_opts.items() if v is not None})
+        for k, v in opts.items():
+            gmsh.option.setNumber(k, v)
 
         gmsh.model.mesh.generate(3)
         gmsh.write(output_path)

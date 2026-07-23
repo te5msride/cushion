@@ -95,10 +95,44 @@ class PressureScheduleController(Sofa.Core.Controller):
 
         self.channels = sorted({a["channel"] for a in self.actuators})
 
+        # Purge stale VTK shape frames from previous runs. VTKExporter uses
+        # overwrite=False and restarts its counter at 0 each run, so a
+        # shorter run leaves higher-numbered frames behind and SofaShape
+        # (which globs the folder) reports an inflated frame count.
+        import glob
+        shape_dir = os.path.join(self.here, "shape")
+        for body in self.spec.get("bodies", []):
+            if not body.get("export_shape"):
+                continue
+            base = os.path.join(shape_dir, body["name"])
+            for old in glob.glob(base + "*.vtk") + glob.glob(base + "*.vtu"):
+                try:
+                    os.remove(old)
+                except OSError:
+                    pass
+
+        # ContactListeners (B1): (name, object) per (body, target) pair.
+        # Read at step end for contact points + count.
+        self.listeners = []  # (base_name, listener_object)
+        for entry in self.spec.get("contact_listeners", []):
+            base, nm = entry if isinstance(entry, (list, tuple)) else (entry, entry)
+            obj = getattr(self.node, nm, None)
+            if obj is not None:
+                self.listeners.append((base, obj))
+
         if self.save:
             self.out_csv = os.path.join(self.here, "output", "output.csv")
             if os.path.exists(self.out_csv):
                 os.remove(self.out_csv)
+            # contact map: one row per (step, pair): time, pair, count,
+            # then x,y,z per contact point (on the body/finger side)
+            self.contacts_csv = os.path.join(self.here, "output", "contacts.csv")
+            if os.path.exists(self.contacts_csv):
+                os.remove(self.contacts_csv)
+            if self.listeners:
+                with open(self.contacts_csv, "w", newline="") as f:
+                    f.write("# time,pair,count,then x,y,z per contact "
+                            "(on body side)\n")
             # cable telemetry: displacement + force per cable per step
             self.cables = [a for a in self.actuators if a["kind"] == "cable"]
             self.cables_csv = os.path.join(self.here, "output", "cables.csv")
@@ -191,3 +225,37 @@ class PressureScheduleController(Sofa.Core.Controller):
         if t > self.duration:
             print("[sofagh] schedule complete, stopping animation")
             self.node.animate.value = False
+
+    def onAnimateEndEvent(self, event):
+        # contact map: sampled after the step (collision resolved this step)
+        if not (self.save and self.listeners):
+            return
+        t = self.node.time.value
+        if t <= self.pre_time:
+            return
+        # aggregate the per-element-type sub-listeners under their base
+        # pair name (point-tri + tri-point + line-line -> one count/pair)
+        agg = {}  # base -> [count, coords]
+        for base, listener in self.listeners:
+            try:
+                n = int(listener.getNumberOfContacts())
+            except Exception:
+                n = 0
+            coords = []
+            if n:
+                try:
+                    # getContactPoints -> [(modelA, posA, modelB, posB), ...];
+                    # posA is on collisionModel1 (the body). Not all SOFA
+                    # builds bind this -> fall back to count only.
+                    for tup in listener.getContactPoints():
+                        p = tup[1]
+                        coords.extend([float(p[0]), float(p[1]), float(p[2])])
+                except Exception:
+                    coords = []
+            slot = agg.setdefault(base, [0, []])
+            slot[0] += n
+            slot[1].extend(coords)
+        with open(self.contacts_csv, "a", newline="") as f:
+            w = csv.writer(f)
+            for base, (n, coords) in agg.items():
+                w.writerow([t, base, n] + coords)

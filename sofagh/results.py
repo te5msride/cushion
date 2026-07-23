@@ -9,9 +9,14 @@ Two artifacts per run:
 import os
 
 
-def read_monitor(project_dir, body_name):
-    """Return (times, frames) where frames[i] = [(x,y,z), ...] per particle."""
-    path = os.path.join(project_dir, "monitor", body_name + "_x.txt")
+def read_monitor(project_dir, body_name, quantity="x"):
+    """Return (times, frames) where frames[i] = [(x,y,z), ...] per particle.
+
+    quantity: Monitor export to read -- "x" positions (default) or "f"
+    forces (needs ExportForces on the Monitor). Same gnuplot triplet
+    format for both.
+    """
+    path = os.path.join(project_dir, "monitor", body_name + "_" + quantity + ".txt")
     if not os.path.isfile(path):
         raise FileNotFoundError(path)
     times, frames = [], []
@@ -32,6 +37,45 @@ def read_monitor(project_dir, body_name):
             frames.append([(coords[i], coords[i + 1], coords[i + 2])
                            for i in range(0, len(coords), 3)])
     return times, frames
+
+
+def read_contacts(project_dir):
+    """Parse output/contacts.csv (ContactListener, B1).
+
+    Returns (pairs, data) where pairs is the list of "body__target" pair
+    names and data[pair] = (times, counts, frames) with frames[i] the list
+    of (x,y,z) contact points (body side) recorded at times[i]. Force is
+    NOT here -- ContactListener exposes contact geometry only.
+    """
+    import csv as _csv
+    path = os.path.join(project_dir, "output", "contacts.csv")
+    if not os.path.isfile(path):
+        raise FileNotFoundError(path)
+    data = {}
+    with open(path, errors="replace") as f:
+        for row in _csv.reader(f):
+            if not row or row[0].startswith("#"):
+                continue
+            try:
+                t = float(row[0])
+                pair = row[1]
+                n = int(float(row[2]))
+            except (ValueError, IndexError):
+                continue
+            coords = []
+            for v in row[3:]:
+                try:
+                    coords.append(float(v))
+                except ValueError:
+                    pass
+            m = len(coords) - (len(coords) % 3)
+            pts = [(coords[i], coords[i + 1], coords[i + 2])
+                   for i in range(0, m, 3)]
+            times, counts, frames = data.setdefault(pair, ([], [], []))
+            times.append(t)
+            counts.append(n)
+            frames.append(pts)
+    return list(data.keys()), data
 
 
 def read_pressures(project_dir):
