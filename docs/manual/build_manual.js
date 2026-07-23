@@ -81,6 +81,7 @@ const components = [
       ["nu", "Number", "item", "Poisson ratio (default 0.4)."],
       ["mass", "Number", "item", "Total mass, kg."],
       ["meshSize", "Number", "item", "Gmsh mesh size factor; smaller = finer tets."],
+      ["gmshOpts", "Text", "list", "Extra Gmsh options as key = value lines (defaults match the reference pipeline), e.g. algo2d = MeshAdapt, algo3d = Delaunay, smoothing = 1, sizeFactor = 0.5."],
       ["cavities", "Cavity", "list", "From SofaCavity."],
       ["tendons", "Tendon", "list", "From SofaTendon / SofaTendons."],
       ["regions", "Region", "list", "From SofaRegion."],
@@ -91,10 +92,11 @@ const components = [
       ["visualGeo", "Geometry", "list", "Display-only surfaces, deformed with the body but never simulated."],
       ["visualFiles", "Text", "list", "Display-only .stl paths, used as-is."],
       ["visualFaces", "Integer", "item", "Decimate visualGeo to this face count on export (0 = off)."],
+      ["protocol", "Protocol", "item", "Keyframed rigid motion from SofaProtocol; needs a fixation box (the motion drags the body by its clamps)."],
       ["exportShape", "Integer", "item", "Export the deformed volume mesh every N steps for SofaShape playback (0 = off)."],
     ],
     outputs: [["body", "Body reference, feed into SofaScene."]],
-    notes: "",
+    notes: "Monitor points also record force: SofaResults returns the nodal force (mN) at each, so a point on a contact pad reads out the grip reaction.",
   },
   {
     name: "SofaCavity", icon: "SofaCavity.png", group: "Define",
@@ -189,6 +191,17 @@ const components = [
     notes: "",
   },
   {
+    name: "SofaProtocol", icon: "SofaProtocol.png", group: "Actuate",
+    desc: "Keyframed rigid motion of a whole body over time -- a pick-and-place move: carry a gripper down, hold, and lift. The motion is applied through the body's rest positions, so the body is dragged by its fixations; a body without a fixation box will not follow.",
+    inputs: [
+      ["times", "Number", "list", "Keyframe times, seconds."],
+      ["offsets", "Vector", "list", "Body offset from its start position at each keyframe (first is usually 0,0,0). Linear interpolation between keyframes."],
+      ["name", "Text", "item", "Optional label."],
+    ],
+    outputs: [["protocol", "Protocol reference, feed into SofaBody."]],
+    notes: "Time the actuation profiles to match the motion -- e.g. inflate the cavities while the offset holds at the object.",
+  },
+  {
     name: "SofaScene", icon: "SofaScene.png", group: "Simulate",
     desc: "Assembles everything into a runnable SOFA project folder: meshes the bodies, writes the scene description, actuation schedule, and solver configuration. The folder is self-contained and can also be run outside Grasshopper.",
     inputs: [
@@ -258,13 +271,18 @@ const components = [
       ["times", "One time per recorded frame."],
       ["points", "Tree: branch per frame, items = tracked point positions."],
       ["lastPts", "Final frame (quick preview)."],
+      ["forces", "Tree of vectors: nodal force (mN) at the monitor points, branch per frame -- the grip reaction where a point sits on a contact pad."],
       ["pTimes", "Actuation sample times."],
       ["pressures", "Tree: branch per channel, commanded/measured values."],
       ["cableNames", "Cable names (when tendons exist)."],
       ["cableDisp", "Tree: displacement per cable, mm."],
       ["cableForce", "Tree: force per cable, mN."],
+      ["contactPairs", "Names of the body/target contact pairs (when targets and collision exist)."],
+      ["contactCount", "Tree: number of contacts per step, branch per pair."],
+      ["contactTimes", "Tree: step times, branch per pair."],
+      ["contactPts", "Tree: contact locations on the body surface, branch per pair and frame (contact geometry, not force)."],
     ],
-    notes: "Typical recipes: points + Tree Branch + slider = scrub the motion; Flip Matrix + Polyline = trajectory curves; pressures + Quick Graph = actuation history.",
+    notes: "Typical recipes: points + Tree Branch + slider = scrub the motion; Flip Matrix + Polyline = trajectory curves; pressures + Quick Graph = actuation history; contactPts at a frame = the grasp contact map.",
   },
   {
     name: "SofaShape", icon: "SofaShape.png", group: "Results",
@@ -290,17 +308,17 @@ const groups = ["Define", "Actuate", "Simulate", "Results"];
 const children = [];
 
 // --- cover
-children.push(new Paragraph({ spacing: { before: 2800 }, children: [] }));
+children.push(new Paragraph({ spacing: { before: 3000 }, children: [] }));
 children.push(new Paragraph({
   alignment: AlignmentType.CENTER,
-  children: [img("logofinal.png", 340)],
+  children: [img("logofinal.png", 300)],
 }));
 children.push(new Paragraph({
-  alignment: AlignmentType.CENTER, spacing: { before: 400 },
-  children: [new TextRun({ text: "CUSHION", size: 72, font: "Helvetica" })],
+  alignment: AlignmentType.CENTER, spacing: { before: 320 },
+  children: [img("textlogo.png", 320)],
 }));
 children.push(new Paragraph({
-  alignment: AlignmentType.CENTER, spacing: { before: 100 },
+  alignment: AlignmentType.CENTER, spacing: { before: 260 },
   children: [new TextRun({ text: "Soft robotics simulation tools for Grasshopper3D", size: 26, font: "Helvetica" })],
 }));
 children.push(new Paragraph({ children: [new PageBreak()] }));
@@ -368,7 +386,7 @@ children.push(heading("Dependencies & Installation", HeadingLevel.HEADING_1));
   "Rhino 8 with Grasshopper.",
   "SOFA v24.06 binaries with the SofaPython3, SoftRobots, STLIB and SofaValidation plugins (all included in the official release bundle from www.sofa-framework.org/download). Set the SOFA_ROOT environment variable to the installation folder, or wire the path into SofaRun.",
   "Python 3.10 with numpy, for SOFA's embedded interpreter (see the installation guide for per-platform steps; this is the most common setup issue).",
-  "Gmsh (Python package) is installed automatically into Rhino's Python on first use; the first scene write needs an internet connection and about a minute.",
+  "Gmsh (Python package), installed once into Rhino's own Python: run \"<rhino-python>\" -m pip install gmsh (the rhino-python path is in the installation guide). Do not rely on automatic install.",
 ].forEach(t => children.push(new Paragraph({
   spacing: { after: 140 },
   children: [new TextRun({ text: "-  " + t, size: 22, font: "Helvetica" })],
