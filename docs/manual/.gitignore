@@ -1,4 +1,5 @@
 node_modules/
 package*.json
 *.pdf
+!Cushion_Manual.pdf
 page-*.jpg
