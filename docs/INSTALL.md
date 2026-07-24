@@ -5,7 +5,7 @@ SOFA runs. In v0.1 they are the **same machine** (the runner launches a
 local `runSofa`).
 
 Work through the sections in order. The single most common failure is
-the SOFA-side Python (§4) — get `runSofa` printing a Python version
+the SOFA-side Python (§4). Get `runSofa` printing a Python version
 before you touch Grasshopper.
 
 ---
@@ -14,18 +14,18 @@ before you touch Grasshopper.
 
 Rhino 8 with Grasshopper. Document units **must be millimeters**
 (Cushion is mm/kPa/kg/s throughout). The components run in Rhino's
-built-in CPython (Python 3, `py39-rh8`) — no separate Python needed for
-the Grasshopper side.
+built-in CPython (Python 3, `py39-rh8`). No separate Python is needed
+for the Grasshopper side.
 
 ## 2. Getting the Cushion components
 
-Pick one — **A** is all you need to run the bundled examples.
+Pick one. **A** is all you need to run the bundled examples.
 
 **A. Run the examples (recommended to try it out).**
 Clone or download this repository anywhere readable, then open
 `examples/continuum_robot.gh` or `examples/simple_gripper.gh` in
 Grasshopper. The Cushion components are already embedded in the
-definition as **Script components** — nothing to register or compile.
+definition as **Script components**; nothing to register or compile.
 You only set path inputs (§6).
 
 **B. Build the components yourself (authoring a new definition).**
@@ -36,7 +36,7 @@ listed in that file's header comment. Exact signatures are in
 
 **C. Compiled plugin `.gha` (end-user path, once released).**
 When Cushion is published, install the **`.yak`** package via Rhino's
-`_PackageManager` (search "Cushion") — this is the food4rhino route and
+`_PackageManager` (search "Cushion"). This is the food4rhino route and
 the intended way for non-developers. Manual fallback: drop the `.gha`
 into Grasshopper's components folder
 (*File ▸ Special Folders ▸ Components Folder*), right-click the file ▸
@@ -49,7 +49,7 @@ Download the **full binary bundle** for your OS from the pinned release:
 
 > https://github.com/sofa-framework/sofa/releases/tag/v24.06.00
 
-The bundle already contains the required plugins — `SofaPython3`,
+The bundle already contains the required plugins: `SofaPython3`,
 `SoftRobots`, `STLIB`, `SofaValidation`, `MultiThreading`. Confirm they
 exist under `<SOFA>/plugins/`. Use **exactly v24.06.00**: SofaPython3 is
 built against a specific Python (3.10) and other releases will not load
@@ -59,7 +59,7 @@ Platform extraction details are in §5 (Windows) / §6 (macOS).
 
 ## 4. Python 3.10 + numpy (for SOFA's embedded interpreter)
 
-This is **separate** from Rhino's Python — it is the interpreter
+This is **separate** from Rhino's Python; it is the interpreter
 SofaPython3 links against. Details per platform in §5 / §6. Verify SOFA
 works **before** Grasshopper:
 
@@ -70,14 +70,14 @@ works **before** Grasshopper:
 Expected: `[SofaPython3] Initializing with python version 3.10.x` and no
 `Plugin loading failed`. If you see a missing-Python error, §5/§6 fix it.
 
-## 5. gmsh (manual, into Rhino's CPython)
+## 5. gmsh (manual: into Rhino's CPython)
 
 Cushion meshes geometry with the `gmsh` Python package, which must live
-in **Rhino's own CPython**. Install it once, explicitly — do **not**
+in **Rhino's own CPython**. Install it once, explicitly. Do **not**
 assume Rhino auto-installs it.
 
 **First, make Rhino generate its Python.** The `.rhinocode/py39-rh8`
-folder does not exist on a fresh install — Rhino creates it only after a
+folder does not exist on a fresh install; Rhino creates it only after a
 Python 3 script component has run at least once. So before the commands
 below: launch Rhino, drop any **Python 3 Script component** onto a
 Grasshopper canvas (or just open one of the example definitions and let
@@ -88,7 +88,7 @@ Locate Rhino 8's Python:
 * **Windows:** `%USERPROFILE%\.rhinocode\py39-rh8\python.exe`
 * **macOS:**   `~/.rhinocode/py39-rh8/python3.9`
 
-If the path isn't there yet, you skipped the step above — run a Python
+If the path isn't there yet, you skipped the step above. Run a Python
 component in Grasshopper first.
 
 Install and verify (quote the path if it has spaces):
@@ -102,7 +102,7 @@ The second line must print a version. If `pip` is missing, run
 `"<rhino-python>" -m ensurepip` first.
 
 > Note: SofaScene carries a `# r: gmsh` directive that *may* fetch gmsh
-> on first run when the machine is online. Do not rely on it — offline,
+> on first run when the machine is online. Do not rely on it; offline,
 > proxied, or locked-down machines fail silently. The manual install
 > above is the sure path and only takes a minute.
 
@@ -110,13 +110,13 @@ The second line must print a version. If `pip` is missing, run
 
 Cushion needs three paths at runtime:
 
-* **`repo`** — this repository's folder. Wire it into each component's
+* **`repo`**: this repository's folder. Wire it into each component's
   `repo` input, **or** set the `SOFAGH_ROOT` environment variable once
   and leave the `repo` inputs empty.
-* **`sofaRoot`** (SofaRun) — the SOFA folder (the one **containing**
+* **`sofaRoot`** (SofaRun): the SOFA folder (the one **containing**
   `bin/`). Alternatively set `SOFA_ROOT`; the runner also auto-scans
   `/Applications` on macOS.
-* **`projDir`** (SofaScene) — a **local-disk** working folder for the
+* **`projDir`** (SofaScene): a **local-disk** working folder for the
   written project. Never a synced folder (see below).
 
 ---
@@ -131,7 +131,7 @@ Cushion needs three paths at runtime:
 * If `runSofa -l SofaPython3` complains about a missing Python DLL,
   install **Python 3.10** (python.org, 64-bit), then:
   `py -3.10 -m pip install numpy`.
-* Keep `projDir` on the **local disk**, not OneDrive/Dropbox — the
+* Keep `projDir` on the **local disk**, not OneDrive/Dropbox; the
   controller writes CSV/monitor files every timestep and sync clients
   corrupt or lock them mid-write.
 
@@ -161,7 +161,7 @@ The macOS build is x86_64 and hard-links a specific Python.
 6. Optional: `export SOFA_ROOT=/Applications/SOFA_v24.06.00_MacOS` in
    your shell profile; the runner also auto-scans `/Applications`.
 
-> gmsh (§5) installs into Rhino's Python normally on Apple Silicon — that
+> gmsh (§5) installs into Rhino's Python normally on Apple Silicon; that
 > interpreter is native and unrelated to SOFA's x86_64 requirement.
 
 ---
@@ -172,7 +172,7 @@ The definition itself is portable (components, wires, type hints all
 travel). Only **panel contents** change: `repo`, `projDir`, `sofaRoot`,
 and any mesh-file paths. Keep one path panel per platform
 (disabled/enabled), everything else is shared. Paths need no surrounding
-quotes — the components strip stray quotes and whitespace, but clean
+quotes; the components strip stray quotes and whitespace, but clean
 input avoids surprises.
 
 Re-check after switching: `projDir` must always be a local-disk path on

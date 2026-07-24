@@ -1,6 +1,6 @@
-# Example 1 — tendon-driven continuum robot + workspace mapping
+# Example 1: tendon-driven continuum robot + workspace mapping
 
-Everything generated with native Grasshopper blocks — no file inputs.
+Everything generated with native Grasshopper blocks, no file inputs.
 One simulation run sweeps the pull direction 360°; the Monitor logs the
 backbone every timestep, so the visited configurations form the
 workspace sample. Convex hull of the tip cloud = workspace bounds.
@@ -18,7 +18,7 @@ workspace sample. Convex hull of the tip cloud = workspace bounds.
 | Tmax | 500 mN | tune: tip should bend visibly, not buckle |
 | gravityZ | 0 | flip to −9810 for gravity-loaded workspace |
 
-## Canvas, block by block
+## Canvas: block by block
 
 **Body**
 1. `Circle` (plane XY, r 12) → `Extrude` (vector 0,0,100) → `Cap Holes`
@@ -40,8 +40,7 @@ workspace sample. Convex hull of the tip cloud = workspace bounds.
 
 **Sweep profiles** (native math)
 1. `Series`: k = 0…12 (13 keyframes) → times = k (seconds).
-2. Per cable i (φᵢ = 0/120/240°): values_k = Tmax · max(0, cos(30°·k − φᵢ))
-   — one `Expression` component: `Tmax*max(0, cos(rad(30*k - phi)))`
+2. Per cable i (φᵢ = 0/120/240°): values_k = Tmax · max(0, cos(30°·k − φᵢ)) via one `Expression` component: `Tmax*max(0, cos(rad(30*k - phi)))`
    with k the series and phi a slider per copy.
 3. Three `PressureProfile` (channels 1/2/3, shared times, own values)
    → `Merge` → `SofaScene.profiles`.
@@ -52,7 +51,7 @@ for interior coverage if wanted.
 
 **Scene + run**
 1. `SofaScene`: projDir e.g. `C:\SOFA\projects\continuum1`, gravityZ 0,
-   no floor, no collision (nothing to touch — keep it fast), write.
+   no floor, no collision (nothing to touch, keep it fast), write.
 2. `SetupPreview`: check tet surface density, tendon points inside the
    volume, fixation box swallowing the base.
 3. `SofaRun`: gui True first (watch one sweep), then batch for the real
@@ -60,7 +59,7 @@ for interior coverage if wanted.
 
 **Post-processing**
 1. `SofaResults` (bodyName `trunk`): `points` = tree, branch per frame.
-2. Tip cloud: `List Item` (index −1) on each branch — e.g. `Flip Matrix`
+2. Tip cloud: `List Item` (index −1) on each branch, e.g. `Flip Matrix`
    → last branch, or `Tree Statistics` + `Tree Branch`. Preview as
    point cloud.
 3. Convex hull of the tip cloud (native GH hull component):

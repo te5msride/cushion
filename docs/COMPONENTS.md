@@ -3,13 +3,13 @@
 All components are Rhino 8 **Script components** (Python 3). Create the
 component, paste the script from `gh/components/`, then add the inputs/
 outputs below (right-click input → rename, set *Type hint* and
-*item/list access*). Names must match exactly — the scripts refer to
+*item/list access*). Names must match exactly; the scripts refer to
 them as variables.
 
 General rules:
 
 * Components pass data to each other as **token strings** (e.g.
-  `sofagh::cavity::3::140...`) referencing a shared in-session registry —
+  `sofagh::cavity::3::140...`) referencing a shared in-session registry, 
   immune to Grasshopper type marshalling. Any type hint works on these
   inputs (`str` or none). Tokens are session-bound: after restarting
   Rhino, recompute upstream components (the consuming component will
@@ -21,7 +21,7 @@ General rules:
 
 ---
 
-## SofaBody — deformable FEM body
+## SofaBody: deformable FEM body
 
 | Input | Hint | Access | Notes |
 |---|---|---|---|
@@ -37,8 +37,8 @@ General rules:
 | tendons | str/none | list | from SofaTendon |
 | regions | str/none | list | from SofaRegion |
 | fixations | Box | list | nodes inside are clamped (RestShapeSprings 1e12) |
-| hollow | bool | item | cavities become internal voids of the tet mesh (default True — the physical membrane); False = solid body, pressure on an internal surface |
-| orient | Transform | item | rigid placement of the WHOLE body assembly (geo, cavities, tendons, fixations, monitor points) — design flat, wire e.g. an Orient component's X output; rotation+translation only |
+| hollow | bool | item | cavities become internal voids of the tet mesh (default True, the physical membrane); False = solid body, pressure on an internal surface |
+| orient | Transform | item | rigid placement of the WHOLE body assembly (geo, cavities, tendons, fixations, monitor points), design flat, wire e.g. an Orient component's X output; rotation+translation only |
 | rotate | Vector3d | item | OR euler degrees about world X,Y,Z (applied X→Y→Z, SOFA convention); ignored if orient wired |
 | translate | Vector3d | item | translation applied after rotate |
 | monitorPts | Point3d | list | tracked points; snapped to closest mesh nodes at start; required for SofaResults trajectories |
@@ -56,7 +56,7 @@ Monitor points also record **force**: SofaResults returns the nodal force
 (mN) at each monitorPt, so points placed on a contact pad read out the grip
 reaction.
 
-## SofaCavity — pneumatic chamber
+## SofaCavity: pneumatic chamber
 
 | Input | Hint | Access | Notes |
 |---|---|---|---|
@@ -68,7 +68,7 @@ reaction.
 Output: `cavity` (object). Pressure in kPa; the ×dt scaling SOFA's
 SurfacePressureConstraint expects is handled by the controller.
 
-## SofaTendon — cable actuation
+## SofaTendon: cable actuation
 
 | Input | Hint | Access | Notes |
 |---|---|---|---|
@@ -81,20 +81,20 @@ SurfacePressureConstraint expects is handled by the controller.
 
 Outputs: `tendon` (token), `pathPts` (routing points, preview).
 
-Control: same PressureProfile/channel system as cavities — `valueType`
+Control: same PressureProfile/channel system as cavities; `valueType`
 decides interpretation (displacement mm, applied raw; force mN, ×dt like
 pressures). Multi-cable systems: use `force` (simultaneous displacement
-control of coupled cables fights the constraint solver — LETIAS note).
+control of coupled cables fights the constraint solver; LETIAS note).
 Telemetry: every run writes `output/cables.csv` (displacement + force
-per cable per step) — read back via SofaResults `cableDisp`/`cableForce`.
+per cable per step), read back via SofaResults `cableDisp`/`cableForce`.
 
-## SofaTendons / SofaProfiles — multi-channel variants
+## SofaTendons / SofaProfiles: multi-channel variants
 
 Same as SofaTendon/PressureProfile but one component drives N channels
 via **tree-access** inputs (right-click input → Access → Tree):
 
 * `SofaTendons`: `pts` tree, one branch per tendon (don't flatten a
-  Divide Curve over a list of curves — its output is already the right
+  Divide Curve over a list of curves; its output is already the right
   tree); `channels` list optional (default 1..N); one `valueType` for
   all; `pullPoints` list matched by index. Output `tendons` = list →
   SofaBody.tendons directly, no Merge.
@@ -105,10 +105,10 @@ via **tree-access** inputs (right-click input → Access → Tree):
 Per-component variants stay available; plural ones keep the canvas
 compact for 3+ channels.
 
-## SofaRegion — locally stiffened sub-region
+## SofaRegion: locally stiffened sub-region
 
 Three definition modes: ready closed mesh (`geo`), auto-shell
-(`surface` + `thickness` — builds a closed hollow shell via mesh
+(`surface` + `thickness`, builds a closed hollow shell via mesh
 offset; this is how "membrane with no inlet" geometry that GH cannot
 represent as a Brep is made), or existing file (`meshFile`).
 
@@ -126,10 +126,10 @@ represent as a Brep is made), or existing file (`meshFile`).
 Outputs: `region` (object), `shell` (preview mesh, auto-shell mode).
 
 Mechanism: SOFA `MeshROI` selects the body tets inside the closed mesh
-and an overlay `TetrahedronFEMForceField` adds stiffness — no remeshing,
-regions never exist as separate bodies.
+and an overlay `TetrahedronFEMForceField` adds stiffness. No remeshing,
+and regions never exist as separate bodies.
 
-## PressureProfile — actuation keyframes
+## PressureProfile: actuation keyframes
 
 | Input | Hint | Access | Notes |
 |---|---|---|---|
@@ -140,11 +140,11 @@ regions never exist as separate bodies.
 Output: `profile` (object). Linear interpolation, resampled at 100 Hz
 into input.csv. Value held at nearest endpoint outside the keyframe span.
 
-## SofaProtocol — keyframed rigid body motion
+## SofaProtocol: keyframed rigid body motion
 
 Keyframes an offset of the whole body over time (pick-and-place moves:
 carry the gripper down, hold, lift). Applied through the body's rest
-positions — the body is dragged by its **fixations**; a body without a
+positions; the body is dragged by its **fixations**, and a body without a
 fixation box will not follow.
 
 | Input | Hint | Access | Notes |
@@ -157,7 +157,7 @@ Output: `protocol` (token) → new `SofaBody.protocol` input. Linear
 interpolation; held outside the keyframe span. Time the actuation
 profiles to match (e.g. inflate while the offset holds at the object).
 
-## AnimationPreview — scrub the finished sim in the viewport (experimental, not in v0.1)
+## AnimationPreview: scrub the finished sim in the viewport (experimental, not in v0.1)
 
 Frame slider → deformed body volumes (needs `exportShape` on bodies),
 rigid targets at their frame pose (automatic 3-point pose track),
@@ -173,10 +173,10 @@ monitored points at that instant, static fixation boxes + tendon paths.
 Outputs: `volumes`, `targets`, `trackPts`, `tendonCrvs` (static),
 `fixBoxes`, `nFrames`, `time`, `info`.
 
-## SetupPreview — scene preview in the Rhino viewport
+## SetupPreview: scene preview in the Rhino viewport
 
 Reads the written project folder and rebuilds everything as Rhino
-geometry — including file-path meshes that never existed in GH and the
+geometry, including file-path meshes that never existed in GH and the
 actual gmsh-meshed volume surface (meshing QA). Wire outputs through
 Custom Preview components with per-role colors.
 
@@ -188,10 +188,10 @@ Custom Preview components with per-role colors.
 
 Outputs: `volumes` (FEM surfaces), `cavities`, `regions`, `targets`
 (Mesh lists), `tendonCrvs` (cable routing paths), `tendonChs` (channel per
-tendon — Text Tag the start points), `monitorPts` (points), `fixBoxes`
+tendon, Text Tag the start points), `monitorPts` (points), `fixBoxes`
 (boxes), `info`.
 
-## SofaTarget — rigid interaction object
+## SofaTarget: rigid interaction object
 
 | Input | Hint | Access | Notes |
 |---|---|---|---|
@@ -204,7 +204,7 @@ Output: `target` (object) → SofaScene.targets. Collision models named
 `target` (usable in contactRules). Body needs `collisionGeo` wired and
 usually a floor. v0 approximation: unit rotational inertia.
 
-## SofaShape — deformed shape playback
+## SofaShape: deformed shape playback
 
 Requires `exportShape` > 0 on SofaBody at scene-write time (exports the
 volume mesh every N steps; N=10 at dt=0.01 → 10 frames/s of sim time).
@@ -220,7 +220,7 @@ volume mesh every N steps; N=10 at dt=0.01 → 10 frames/s of sim time).
 Outputs: `mesh` (deformed surface at that frame), `nFrames`, `time`
 (s), `info`.
 
-## SofaScene — project writer
+## SofaScene: project writer
 
 | Input | Hint | Access | Notes |
 |---|---|---|---|
@@ -238,12 +238,12 @@ Outputs: `mesh` (deformed surface at that frame), `nFrames`, `time`
 | contactRules | str | item | RuleBasedContactManager rules (grasping); empty = default friction contact |
 | write | bool | item | toggle True to (re)write |
 
-Outputs: `scenePath` (str), `info` (str — read it). Writes
+Outputs: `scenePath` (str), `info` (str, read it). Writes
 `meshes/`, `scene.json`, `input.csv`, copies `sofagh/runtime/scene.py` +
 `controller.py`. Note: `scenePath` is only emitted while `write` is
 True.
 
-## SofaRun — launcher
+## SofaRun: launcher
 
 | Input | Hint | Access | Notes |
 |---|---|---|---|
@@ -255,7 +255,7 @@ True.
 
 Output: `status` (str). Log written to `<projDir>/runsofa.log`.
 
-## SofaResults — read back
+## SofaResults: read back
 
 | Input | Hint | Access | Notes |
 |---|---|---|---|
@@ -264,18 +264,18 @@ Output: `status` (str). Log written to `<projDir>/runsofa.log`.
 | repo | str | item | |
 | refresh | bool | item | toggle to re-read |
 
-Outputs: `info` (read first), `times`, `points` (DataTree — branch per
+Outputs: `info` (read first), `times`, `points` (DataTree, branch per
 frame, items = tracked points), `lastPts` (final frame), `forces`
-(DataTree of Vector3d — nodal force in mN at the monitor points, branch per
+(DataTree of Vector3d, nodal force in mN at the monitor points, branch per
 frame; the grip reaction where points sit on a contact pad), `pTimes`,
-`pressures` (DataTree — branch per channel), and when tendons exist:
-`cableNames`, `cableDisp` (mm), `cableForce` (mN) — branch per cable.
+`pressures` (DataTree, branch per channel), and when tendons exist:
+`cableNames`, `cableDisp` (mm), `cableForce` (mN), branch per cable.
 
 When the scene has targets and collision, a contact map comes back too:
-`contactPairs` (list of `body__target` names), `contactCount` (DataTree —
+`contactPairs` (list of `body__target` names), `contactCount` (DataTree, 
 contacts per step, branch per pair), `contactTimes` (branch per pair), and
-`contactPts` (DataTree — contact locations on the body surface, branch per
-`pair; frame`). This is contact **geometry** — where and how many — not the
+`contactPts` (DataTree, contact locations on the body surface, branch per
+`pair; frame`). This is contact **geometry**, where and how many, not the
 resolved contact force; for a force reading use `forces` at monitor points
 on the pad.
 

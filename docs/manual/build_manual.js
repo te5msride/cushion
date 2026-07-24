@@ -209,14 +209,14 @@ const components = [
   },
   {
     name: "SofaProtocol", icon: "SofaProtocol.png", group: "Actuate",
-    desc: "Keyframed rigid motion of a whole body over time -- a pick-and-place move: carry a gripper down, hold, and lift. The motion is applied through the body's rest positions, so the body is dragged by its fixations; a body without a fixation box will not follow.",
+    desc: "Keyframed rigid motion of a whole body over time, a pick-and-place move: carry a gripper down, hold, and lift. The motion is applied through the body's rest positions, so the body is dragged by its fixations; a body without a fixation box will not follow.",
     inputs: [
       ["times", "Number", "list", "Keyframe times, seconds."],
       ["offsets", "Vector", "list", "Body offset from its start position at each keyframe (first is usually 0,0,0). Linear interpolation between keyframes."],
       ["name", "Text", "item", "Optional label."],
     ],
     outputs: [["protocol", "Protocol", "item", "Reference, feed into SofaBody."]],
-    notes: "Time the actuation profiles to match the motion -- e.g. inflate the cavities while the offset holds at the object.",
+    notes: "Time the actuation profiles to match the motion, e.g. inflate the cavities while the offset holds at the object.",
   },
   {
     name: "SofaScene", icon: "SofaScene.png", group: "Simulate",
@@ -290,7 +290,7 @@ const components = [
       ["times", "Number", "list", "One time per recorded frame."],
       ["points", "Point", "tree", "Branch per frame, items = tracked point positions."],
       ["lastPts", "Point", "list", "Final frame (quick preview)."],
-      ["forces", "Vector", "tree", "Nodal force (mN) at the monitor points, branch per frame -- the grip reaction where a point sits on a contact pad."],
+      ["forces", "Vector", "tree", "Nodal force (mN) at the monitor points, branch per frame (the grip reaction where a point sits on a contact pad)."],
       ["pTimes", "Number", "list", "Actuation sample times."],
       ["pressures", "Number", "tree", "Branch per channel, commanded/measured values."],
       ["cableNames", "Text", "list", "Cable names (when tendons exist)."],
@@ -354,7 +354,7 @@ children.push(new Paragraph({ children: [new PageBreak()] }));
 // --- copyright page
 children.push(new Paragraph({ spacing: { before: 3600 }, children: [] }));
 [
-  "CUSHION V0.1 -- Soft robotics simulation tools for Grasshopper3D",
+  "CUSHION V0.1: Soft robotics simulation tools for Grasshopper3D",
   "",
   "Developed by Trevor Exley and Anderson Brazil Nardin",
   "Soft BioRobotics Perception Lab, Istituto Italiano di Tecnologia",
@@ -406,9 +406,9 @@ children.push(new Paragraph({ children: [new PageBreak()] }));
 // --- abstract
 children.push(heading("Abstract", HeadingLevel.HEADING_1));
 [
-  "Cushion is a plugin for simulating soft robots directly within Rhino and Grasshopper3D. It connects the parametric design environment to SOFA (Simulation Open Framework Architecture) and its SoftRobots plugin: deformable bodies, pneumatic cavities, tendons, stiffened regions, and rigid interaction objects are defined as native Grasshopper components. Cushion meshes the geometry, writes a complete finite-element scene, launches the simulation, and returns trajectories, actuation forces, and deformed shapes to the canvas -- so design iteration and physical simulation live in the same definition.",
-  "The workflow grew out of the Monolithic Unit research pipeline (Exley, Nardin, Trunin, Cafiso and Beccai, 2025), in which soft pneumatic actuators designed parametrically in Grasshopper were simulated in SOFA for actuation and sensor-placement studies. Cushion generalizes that pipeline: any closed solid can become a simulated soft body, with materials, actuation, and boundary conditions assigned per component, and results flowing back for downstream design logic -- workspace analysis, grasp evaluation, or optimization loops.",
-  "V0.1 -- Initial release. Pneumatic and tendon actuation, local stiffening regions, rigid targets and contact, scene preview, trajectory monitoring, tendon telemetry, and deformed-shape playback. Requires the freely available SOFA binaries (v24.06).",
+  "Cushion is a plugin for simulating soft robots directly within Rhino and Grasshopper3D. It connects the parametric design environment to SOFA (Simulation Open Framework Architecture) and its SoftRobots plugin: deformable bodies, pneumatic cavities, tendons, stiffened regions, and rigid interaction objects are defined as native Grasshopper components. Cushion meshes the geometry, writes a complete finite-element scene, launches the simulation, and returns trajectories, actuation forces, and deformed shapes to the canvas, so design iteration and physical simulation live in the same definition.",
+  "The workflow grew out of the Monolithic Unit research pipeline (Exley, Nardin, Trunin, Cafiso and Beccai, 2025), in which soft pneumatic actuators designed parametrically in Grasshopper were simulated in SOFA for actuation and sensor-placement studies. Cushion generalizes that pipeline: any closed solid can become a simulated soft body, with materials, actuation, and boundary conditions assigned per component, and results flowing back for downstream design logic: workspace analysis, grasp evaluation, or optimization loops.",
+  "V0.1: Initial release. Pneumatic and tendon actuation, local stiffening regions, rigid targets and contact, scene preview, trajectory monitoring, tendon telemetry, and deformed-shape playback. Requires the freely available SOFA binaries (v24.06).",
 ].forEach(t => children.push(p(t, { size: 22, after: 240 })));
 children.push(new Paragraph({ children: [new PageBreak()] }));
 
@@ -449,7 +449,7 @@ children.push(p("Verify the SOFA side before using Cushion:", { size: 22, after:
 children.push(p("<SOFA>/bin/runSofa -l SofaPython3 -g batch -n 1", { size: 20, after: 240 }));
 children.push(heading("Units & Conventions", HeadingLevel.HEADING_1));
 [
-  "Millimeters, kilopascals, kilograms, seconds. Gravity -9810 mm/s2 in world Z. Geometry passes from Rhino to SOFA 1:1 -- no transform, no unit conversion. The Rhino document must be in millimeters.",
+  "Millimeters, kilopascals, kilograms, seconds. Gravity -9810 mm/s2 in world Z. Geometry passes from Rhino to SOFA 1:1, no transform, no unit conversion. The Rhino document must be in millimeters.",
 ].forEach(t => children.push(p(t, { size: 22, after: 200 })));
 children.push(new Paragraph({ children: [new PageBreak()] }));
 
@@ -461,7 +461,7 @@ if (fs.existsSync(path.join(FIG, "toolbar.png"))) {
     children: [imgNative("toolbar.png")],
   }));
 } else {
-  children.push(p("[toolbar screenshot placeholder -- add figures/toolbar.png (a crop of the Cushion tab) and rebuild]", { italic: true, color: GRAY, after: 300 }));
+  children.push(p("[toolbar screenshot placeholder: add figures/toolbar.png (a crop of the Cushion tab) and rebuild]", { italic: true, color: GRAY, after: 300 }));
 }
 groups.forEach(g => {
   children.push(heading(g, HeadingLevel.HEADING_2));
@@ -470,7 +470,7 @@ groups.forEach(g => {
       spacing: { after: 120 },
       children: [
         img(c.icon, 42),
-        new TextRun({ text: "   " + c.name + " -- ", bold: true, size: 22, font: "Helvetica" }),
+        new TextRun({ text: "   " + c.name + ": ", bold: true, size: 22, font: "Helvetica" }),
         new TextRun({ text: c.desc.split(".")[0] + ".", size: 22, font: "Helvetica" }),
       ],
     }));
@@ -508,7 +508,7 @@ children.push(heading("Workflow Example: Tendon-Driven Continuum Robot", Heading
   "1. Body: Circle (r 12) > Extrude (z 100) > Cap Holes > SofaBody (E 100 kPa, mass 0.03 kg).",
   "2. Tendons: three lines at radius 8, Divide Curve > SofaTendons (tree input), valueType force.",
   "3. Fixation: box around the base; monitor points along the axis.",
-  "4. Profiles: 13 keyframes per channel sweeping Tmax * max(0, cos(30 deg * k - phi)) -- the resultant pull direction rotates 360 degrees.",
+  "4. Profiles: 13 keyframes per channel sweeping Tmax * max(0, cos(30 deg * k - phi)); the resultant pull direction rotates 360 degrees.",
   "5. SofaScene (gravity 0) > SofaPreview to verify > SofaRun.",
   "6. SofaResults: tip positions per frame > convex hull = workspace bounds; cableForce/cableDisp confirm the commanded lobes.",
   "[screenshot placeholders: canvas, SOFA window, workspace hull]",
