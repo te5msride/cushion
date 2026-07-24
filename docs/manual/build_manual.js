@@ -6,7 +6,7 @@ const path = require("path");
 const {
   Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow,
   TableCell, WidthType, AlignmentType, HeadingLevel, PageBreak,
-  ShadingType, BorderStyle,
+  ShadingType, BorderStyle, ExternalHyperlink,
 } = require("docx");
 
 const FIG = path.join(__dirname, "figures");
@@ -22,6 +22,23 @@ function img(file, targetW) {
   return new ImageRun({
     data: fs.readFileSync(p), type: "png",
     transformation: { width: targetW, height: Math.round(h * targetW / w) },
+  });
+}
+
+// image at its native pixel size (no scaling)
+function imgNative(file) {
+  const p = path.join(FIG, file);
+  const { w, h } = pngSize(p);
+  return new ImageRun({
+    data: fs.readFileSync(p), type: "png", transformation: { width: w, height: h },
+  });
+}
+
+// clickable external hyperlink run
+function link(text, url, size = 20) {
+  return new ExternalHyperlink({
+    link: url,
+    children: [new TextRun({ text, size, font: "Helvetica", color: "0563C1", underline: {} })],
   });
 }
 
@@ -342,7 +359,7 @@ children.push(new Paragraph({ spacing: { before: 3600 }, children: [] }));
   "Developed by Trevor Exley and Anderson Brazil Nardin",
   "Soft BioRobotics Perception Lab, Istituto Italiano di Tecnologia",
   "",
-  "trevorwexley@gmail.com          github.com/te5msride/cushion",
+  "__CONTACT__",
   "",
   "Licensed under the GNU Lesser General Public License v2.1 or later.",
   "See the LICENSE file in the repository for the full text.",
@@ -350,10 +367,23 @@ children.push(new Paragraph({ spacing: { before: 3600 }, children: [] }));
   "Cushion interfaces with SOFA (Simulation Open Framework Architecture,",
   "www.sofa-framework.org) and its SoftRobots plugin, which are distributed",
   "under their own licenses and must be installed separately.",
-].forEach(t => children.push(new Paragraph({
-  alignment: AlignmentType.CENTER, spacing: { after: 60 },
-  children: [new TextRun({ text: t, size: 20, font: "Helvetica" })],
-})));
+].forEach(t => {
+  if (t === "__CONTACT__") {
+    children.push(new Paragraph({
+      alignment: AlignmentType.CENTER, spacing: { after: 60 },
+      children: [
+        link("trevorwexley@gmail.com", "mailto:trevorwexley@gmail.com", 20),
+        new TextRun({ text: "          ", size: 20, font: "Helvetica" }),
+        link("github.com/te5msride/cushion", "https://github.com/te5msride/cushion", 20),
+      ],
+    }));
+  } else {
+    children.push(new Paragraph({
+      alignment: AlignmentType.CENTER, spacing: { after: 60 },
+      children: [new TextRun({ text: t, size: 20, font: "Helvetica" })],
+    }));
+  }
+});
 children.push(new Paragraph({ children: [new PageBreak()] }));
 
 // --- contents
@@ -403,14 +433,17 @@ children.push(heading("Installing Cushion", HeadingLevel.HEADING_2));
 })));
 children.push(heading("Links", HeadingLevel.HEADING_2));
 [
-  "Rhino 8: www.rhino3d.com",
-  "SOFA v24.06 binaries: www.sofa-framework.org/download",
-  "Python 3.10 (python.org installer): www.python.org/downloads/release/python-31011",
-  "Cushion repository & issues: github.com/te5msride/cushion",
-  "Manual, examples, install guides: github.com/te5msride/cushion/tree/master/docs",
-].forEach(t => children.push(new Paragraph({
+  ["Rhino 8: ", "www.rhino3d.com", "https://www.rhino3d.com"],
+  ["SOFA v24.06 binaries: ", "www.sofa-framework.org/download", "https://www.sofa-framework.org/download/"],
+  ["Python 3.10 (python.org installer): ", "www.python.org/downloads/release/python-31011", "https://www.python.org/downloads/release/python-31011/"],
+  ["Cushion repository & issues: ", "github.com/te5msride/cushion", "https://github.com/te5msride/cushion"],
+  ["Manual, examples, install guides: ", "github.com/te5msride/cushion/tree/master/docs", "https://github.com/te5msride/cushion/tree/master/docs"],
+].forEach(([label, disp, url]) => children.push(new Paragraph({
   spacing: { after: 100 },
-  children: [new TextRun({ text: "-  " + t, size: 22, font: "Helvetica" })],
+  children: [
+    new TextRun({ text: "-  " + label, size: 22, font: "Helvetica" }),
+    link(disp, url, 22),
+  ],
 })));
 children.push(p("Verify the SOFA side before using Cushion:", { size: 22, after: 80 }));
 children.push(p("<SOFA>/bin/runSofa -l SofaPython3 -g batch -n 1", { size: 20, after: 240 }));
@@ -425,7 +458,7 @@ children.push(heading("Overview of Tools", HeadingLevel.HEADING_1));
 if (fs.existsSync(path.join(FIG, "toolbar.png"))) {
   children.push(new Paragraph({
     alignment: AlignmentType.CENTER, spacing: { after: 300 },
-    children: [img("toolbar.png", 560)],
+    children: [imgNative("toolbar.png")],
   }));
 } else {
   children.push(p("[toolbar screenshot placeholder -- add figures/toolbar.png (a crop of the Cushion tab) and rebuild]", { italic: true, color: GRAY, after: 300 }));
