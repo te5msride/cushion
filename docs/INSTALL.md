@@ -76,10 +76,20 @@ Cushion meshes geometry with the `gmsh` Python package, which must live
 in **Rhino's own CPython**. Install it once, explicitly — do **not**
 assume Rhino auto-installs it.
 
+**First, make Rhino generate its Python.** The `.rhinocode/py39-rh8`
+folder does not exist on a fresh install — Rhino creates it only after a
+Python 3 script component has run at least once. So before the commands
+below: launch Rhino, drop any **Python 3 Script component** onto a
+Grasshopper canvas (or just open one of the example definitions and let
+it load). Then the folder exists.
+
 Locate Rhino 8's Python:
 
 * **Windows:** `%USERPROFILE%\.rhinocode\py39-rh8\python.exe`
-* **macOS:**   `~/.rhinocode/py39-rh8/python3`
+* **macOS:**   `~/.rhinocode/py39-rh8/python3.9`
+
+If the path isn't there yet, you skipped the step above — run a Python
+component in Grasshopper first.
 
 Install and verify (quote the path if it has spaces):
 
