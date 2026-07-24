@@ -95,7 +95,7 @@ const components = [
       ["protocol", "Protocol", "item", "Keyframed rigid motion from SofaProtocol; needs a fixation box (the motion drags the body by its clamps)."],
       ["exportShape", "Integer", "item", "Export the deformed volume mesh every N steps for SofaShape playback (0 = off)."],
     ],
-    outputs: [["body", "Body reference, feed into SofaScene."]],
+    outputs: [["body", "Body", "item", "Reference, feed into SofaScene."]],
     notes: "Monitor points also record force: SofaResults returns the nodal force (mN) at each, so a point on a contact pad reads out the grip reaction.",
   },
   {
@@ -107,7 +107,7 @@ const components = [
       ["channel", "Integer", "item", "Actuation channel (column of the schedule) driving this cavity."],
       ["name", "Text", "item", "Default cavity_<channel>."],
     ],
-    outputs: [["cavity", "Cavity reference, feed into SofaBody."]],
+    outputs: [["cavity", "Cavity", "item", "Reference, feed into SofaBody."]],
     notes: "Pressures are commanded in kPa; internal solver scaling is handled automatically.",
   },
   {
@@ -121,8 +121,8 @@ const components = [
       ["valueType", "Text", "item", "displacement (mm, default) or force (mN)."],
       ["pullPoint", "Point", "item", "Optional external anchor (motor/pulley) the cable exits toward."],
     ],
-    outputs: [["tendon", "Tendon reference, feed into SofaBody."],
-              ["pathPts", "Routing points for viewport preview."]],
+    outputs: [["tendon", "Tendon", "item", "Reference, feed into SofaBody."],
+              ["pathPts", "Point", "list", "Routing points for viewport preview."]],
     notes: "Driving several coupled cables simultaneously: use force mode. Every run also records displacement and force per cable (see SofaResults).",
   },
   {
@@ -134,8 +134,8 @@ const components = [
       ["valueType", "Text", "item", "displacement or force, applied to all tendons."],
       ["pullPoints", "Point", "list", "Optional anchor per tendon, matched by index."],
     ],
-    outputs: [["tendons", "List of tendon references, feed into SofaBody (no Merge needed)."],
-              ["info", "Summary of created tendons."]],
+    outputs: [["tendons", "Tendon", "list", "References, feed into SofaBody (no Merge needed)."],
+              ["info", "Text", "item", "Summary of created tendons."]],
     notes: "",
   },
   {
@@ -151,8 +151,8 @@ const components = [
       ["nu", "Number", "item", "Default 0.4."],
       ["repo", "Text", "item", "Cushion folder path (auto-shell mode only; not needed with the installed plugin)."],
     ],
-    outputs: [["region", "Region reference, feed into SofaBody."],
-              ["shell", "Generated shell mesh (auto-shell mode preview)."]],
+    outputs: [["region", "Region", "item", "Reference, feed into SofaBody."],
+              ["shell", "Mesh", "item", "Generated shell mesh (auto-shell mode preview)."]],
     notes: "",
   },
   {
@@ -164,7 +164,7 @@ const components = [
       ["name", "Text", "item", "Default target1."],
       ["mass", "Number", "item", "kg (default 0.01)."],
     ],
-    outputs: [["target", "Target reference, feed into SofaScene."]],
+    outputs: [["target", "Target", "item", "Reference, feed into SofaScene."]],
     notes: "Contact requires collisionGeo on the body, and usually a floor (SofaScene.floorZ). Rotational inertia is approximated in this release.",
   },
   {
@@ -175,7 +175,7 @@ const components = [
       ["times", "Number", "list", "Keyframe times, seconds."],
       ["values", "Number", "list", "Keyframe values."],
     ],
-    outputs: [["profile", "Profile reference, feed into SofaScene."]],
+    outputs: [["profile", "Profile", "item", "Reference, feed into SofaScene."]],
     notes: "Values hold at the last keyframe: add an explicit return to 0 if the channel should release.",
   },
   {
@@ -186,8 +186,8 @@ const components = [
       ["times", "Number", "tree", "Keyframe times per channel; one branch = shared timeline."],
       ["values", "Number", "tree", "Keyframe values, one branch per channel."],
     ],
-    outputs: [["profiles", "List of profile references, feed into SofaScene."],
-              ["info", "Summary."]],
+    outputs: [["profiles", "Profile", "list", "References, feed into SofaScene."],
+              ["info", "Text", "item", "Summary."]],
     notes: "",
   },
   {
@@ -198,7 +198,7 @@ const components = [
       ["offsets", "Vector", "list", "Body offset from its start position at each keyframe (first is usually 0,0,0). Linear interpolation between keyframes."],
       ["name", "Text", "item", "Optional label."],
     ],
-    outputs: [["protocol", "Protocol reference, feed into SofaBody."]],
+    outputs: [["protocol", "Protocol", "item", "Reference, feed into SofaBody."]],
     notes: "Time the actuation profiles to match the motion -- e.g. inflate the cavities while the offset holds at the object.",
   },
   {
@@ -220,8 +220,8 @@ const components = [
       ["contactRules", "Text", "item", "Advanced contact pairing rules (empty = default friction contact)."],
       ["write", "Boolean", "item", "Toggle True to (re)write the project."],
     ],
-    outputs: [["scenePath", "Path to the written scene; feed into SofaRun / SofaResults / SofaShape / SofaPreview."],
-              ["info", "What was written; read this first when something is off."]],
+    outputs: [["scenePath", "Text", "item", "Path to the written scene; feed into SofaRun / SofaResults / SofaShape / SofaPreview."],
+              ["info", "Text", "item", "What was written; read this first when something is off."]],
     notes: "Units: mm / kPa / kg / s throughout. Rhino document units must be millimeters.",
   },
   {
@@ -235,7 +235,7 @@ const components = [
       ["winRect", "Integer", "list", "Optional x, y, width, height to place the SOFA window (Windows)."],
       ["run", "Boolean", "item", "Toggle True to launch."],
     ],
-    outputs: [["status", "Launch/exit status; the run log is written next to the scene."]],
+    outputs: [["status", "Text", "item", "Launch/exit status; the run log is written next to the scene."]],
     notes: "",
   },
   {
@@ -247,13 +247,15 @@ const components = [
       ["refresh", "Boolean", "item", "Toggle to re-read."],
     ],
     outputs: [
-      ["volumes", "Simulation mesh surfaces (meshing QA)."],
-      ["cavities", "Cavity meshes."], ["regions", "Region meshes."],
-      ["targets", "Target meshes."],
-      ["tendonCrvs", "Cable routing polylines (pull point included)."],
-      ["tendonChs", "Channel number per tendon."],
-      ["monitorPts", "Tracked points."], ["fixBoxes", "Fixation boxes."],
-      ["info", "Counts and any skipped mesh files."],
+      ["volumes", "Mesh", "list", "Simulation mesh surfaces (meshing QA)."],
+      ["cavities", "Mesh", "list", "Cavity meshes."],
+      ["regions", "Mesh", "list", "Region meshes."],
+      ["targets", "Mesh", "list", "Target meshes."],
+      ["tendonCrvs", "Curve", "list", "Cable routing polylines (pull point included)."],
+      ["tendonChs", "Integer", "list", "Channel number per tendon."],
+      ["monitorPts", "Point", "list", "Tracked points."],
+      ["fixBoxes", "Box", "list", "Fixation boxes."],
+      ["info", "Text", "item", "Counts and any skipped mesh files."],
     ],
     notes: "",
   },
@@ -267,20 +269,20 @@ const components = [
       ["refresh", "Boolean", "item", "Toggle to re-read."],
     ],
     outputs: [
-      ["info", "What was found; read this first."],
-      ["times", "One time per recorded frame."],
-      ["points", "Tree: branch per frame, items = tracked point positions."],
-      ["lastPts", "Final frame (quick preview)."],
-      ["forces", "Tree of vectors: nodal force (mN) at the monitor points, branch per frame -- the grip reaction where a point sits on a contact pad."],
-      ["pTimes", "Actuation sample times."],
-      ["pressures", "Tree: branch per channel, commanded/measured values."],
-      ["cableNames", "Cable names (when tendons exist)."],
-      ["cableDisp", "Tree: displacement per cable, mm."],
-      ["cableForce", "Tree: force per cable, mN."],
-      ["contactPairs", "Names of the body/target contact pairs (when targets and collision exist)."],
-      ["contactCount", "Tree: number of contacts per step, branch per pair."],
-      ["contactTimes", "Tree: step times, branch per pair."],
-      ["contactPts", "Tree: contact locations on the body surface, branch per pair and frame (contact geometry, not force)."],
+      ["info", "Text", "item", "What was found; read this first."],
+      ["times", "Number", "list", "One time per recorded frame."],
+      ["points", "Point", "tree", "Branch per frame, items = tracked point positions."],
+      ["lastPts", "Point", "list", "Final frame (quick preview)."],
+      ["forces", "Vector", "tree", "Nodal force (mN) at the monitor points, branch per frame -- the grip reaction where a point sits on a contact pad."],
+      ["pTimes", "Number", "list", "Actuation sample times."],
+      ["pressures", "Number", "tree", "Branch per channel, commanded/measured values."],
+      ["cableNames", "Text", "list", "Cable names (when tendons exist)."],
+      ["cableDisp", "Number", "tree", "Displacement per cable, mm."],
+      ["cableForce", "Number", "tree", "Force per cable, mN."],
+      ["contactPairs", "Text", "list", "Names of the body/target contact pairs (when targets and collision exist)."],
+      ["contactCount", "Integer", "tree", "Number of contacts per step, branch per pair."],
+      ["contactTimes", "Number", "tree", "Step times, branch per pair."],
+      ["contactPts", "Point", "tree", "Contact locations on the body surface, branch per pair and frame (contact geometry, not force)."],
     ],
     notes: "Typical recipes: points + Tree Branch + slider = scrub the motion; Flip Matrix + Polyline = trajectory curves; pressures + Quick Graph = actuation history; contactPts at a frame = the grasp contact map.",
   },
@@ -294,10 +296,10 @@ const components = [
       ["repo", "Text", "item", "Cushion folder path (not needed with the installed plugin)."],
       ["refresh", "Boolean", "item", "Toggle to re-read."],
     ],
-    outputs: [["mesh", "Deformed surface mesh at the frame."],
-              ["nFrames", "Frames available."],
-              ["time", "Simulation time of the frame, s."],
-              ["info", "Status."]],
+    outputs: [["mesh", "Mesh", "item", "Deformed surface mesh at the frame."],
+              ["nFrames", "Integer", "item", "Frames available."],
+              ["time", "Number", "item", "Simulation time of the frame, s."],
+              ["info", "Text", "item", "Status."]],
     notes: "",
   },
 ];
@@ -340,7 +342,7 @@ children.push(new Paragraph({ spacing: { before: 3600 }, children: [] }));
   "Developed by Trevor Exley and Anderson Brazil Nardin",
   "Soft BioRobotics Perception Lab, Istituto Italiano di Tecnologia",
   "",
-  "[website]        [contact email]        [repository URL]",
+  "trevorwexley@gmail.com          github.com/te5msride/cushion",
   "",
   "Licensed under the GNU Lesser General Public License v2.1 or later.",
   "See the LICENSE file in the repository for the full text.",
@@ -404,8 +406,8 @@ children.push(heading("Links", HeadingLevel.HEADING_2));
   "Rhino 8: www.rhino3d.com",
   "SOFA v24.06 binaries: www.sofa-framework.org/download",
   "Python 3.10 (python.org installer): www.python.org/downloads/release/python-31011",
-  "Cushion repository & issues: [repository URL]",
-  "Manual, examples, install guides: [repository URL]/docs",
+  "Cushion repository & issues: github.com/te5msride/cushion",
+  "Manual, examples, install guides: github.com/te5msride/cushion/tree/master/docs",
 ].forEach(t => children.push(new Paragraph({
   spacing: { after: 100 },
   children: [new TextRun({ text: "-  " + t, size: 22, font: "Helvetica" })],
@@ -420,7 +422,14 @@ children.push(new Paragraph({ children: [new PageBreak()] }));
 
 // --- overview of tools
 children.push(heading("Overview of Tools", HeadingLevel.HEADING_1));
-children.push(p("[toolbar screenshot placeholder -- replace with a capture of the Cushion tab]", { italic: true, color: GRAY, after: 300 }));
+if (fs.existsSync(path.join(FIG, "toolbar.png"))) {
+  children.push(new Paragraph({
+    alignment: AlignmentType.CENTER, spacing: { after: 300 },
+    children: [img("toolbar.png", 560)],
+  }));
+} else {
+  children.push(p("[toolbar screenshot placeholder -- add figures/toolbar.png (a crop of the Cushion tab) and rebuild]", { italic: true, color: GRAY, after: 300 }));
+}
 groups.forEach(g => {
   children.push(heading(g, HeadingLevel.HEADING_2));
   components.filter(c => c.group === g).forEach(c => {
@@ -449,7 +458,8 @@ components.forEach((c, i) => {
   children.push(ioTable(c.inputs, ["Name", "Type", "Access", "Description"]));
   children.push(p("", { after: 100 }));
   children.push(p("Outputs", { bold: true, size: 24, after: 100 }));
-  children.push(ioTable(c.outputs.map(o => [o[0], "", "", o[1]]), ["Name", "", "", "Description"]));
+  children.push(ioTable(c.outputs.map(o => [o[0], o[1], o[2] || "", o[3]]),
+                        ["Name", "Type", "Access", "Description"]));
   if (c.notes) {
     children.push(p("", { after: 100 }));
     children.push(p("Notes: " + c.notes, { italic: true, size: 20 }));
