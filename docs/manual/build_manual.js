@@ -482,6 +482,7 @@ children.push(new Paragraph({ children: [new PageBreak()] }));
 children.push(heading("Component Reference", HeadingLevel.HEADING_1));
 components.forEach((c, i) => {
   children.push(new Paragraph({
+    pageBreakBefore: i > 0,
     spacing: { before: 200, after: 100 },
     children: [img(c.icon, 64), new TextRun({ text: "   " + c.name, bold: true, size: 40, font: "Helvetica" })],
   }));
@@ -497,24 +498,29 @@ components.forEach((c, i) => {
     children.push(p("", { after: 100 }));
     children.push(p("Notes: " + c.notes, { italic: true, size: 20 }));
   }
-  if (i < components.length - 1) children.push(new Paragraph({ children: [new PageBreak()] }));
 });
 children.push(new Paragraph({ children: [new PageBreak()] }));
 
 // --- example
 children.push(heading("Examples", HeadingLevel.HEADING_1));
-children.push(p("Two worked definitions ship with Cushion, in the examples folder of the repository (github.com/te5msride/cushion). Each has a full step-by-step walkthrough there; below is the complete Grasshopper canvas for each.", { size: 22, after: 140 }));
+children.push(p("Two worked definitions ship with Cushion, each with a full step-by-step walkthrough (an annotated, zoomable canvas screenshot and notes) on GitHub.", { size: 22, after: 140 }));
 children.push(p("Both examples use the Reduce Mesh component from the free Pufferfish plugin (food4Rhino); install it before opening them.", { size: 20, italic: true, color: GRAY, after: 260 }));
 
 children.push(p("Tendon-driven continuum robot", { bold: true, size: 26, after: 100 }));
-children.push(p("A cylindrical backbone driven by three tendons at 0/120/240 degrees. One run sweeps the pull direction a full turn while the Monitor logs the backbone, and the convex hull of the tip cloud gives the workspace bounds.", { size: 22, after: 160 }));
-children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 100 }, children: [img("continuum_canvas.png", 600)] }));
-children.push(p("Full walkthrough: examples/continuum_robot.md", { size: 20, color: GRAY, after: 320 }));
+children.push(p("A cylindrical backbone driven by three tendons at 0/120/240 degrees. One run sweeps the pull direction a full turn while the Monitor logs the backbone, and the convex hull of the tip cloud gives the workspace bounds.", { size: 22, after: 120 }));
+children.push(new Paragraph({ spacing: { after: 300 }, children: [
+  new TextRun({ text: "Walkthrough: ", size: 22, font: "Helvetica" }),
+  link("github.com/te5msride/cushion/blob/master/examples/continuum_robot.md",
+       "https://github.com/te5msride/cushion/blob/master/examples/continuum_robot.md", 22),
+] }));
 
 children.push(p("PneuNet two-finger gripper", { bold: true, size: 26, after: 100 }));
-children.push(p("A fast-PneuNet finger whose chambers and profile are shaped by Graph Mappers; the cavities become internal voids automatically. One finger is oriented twice into a gripper and carried through a pick-and-place while the chambers inflate, grasping an object.", { size: 22, after: 160 }));
-children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 100 }, children: [img("gripper_canvas.png", 600)] }));
-children.push(p("Full walkthrough: examples/pneunet_gripper.md", { size: 20, color: GRAY, after: 160 }));
+children.push(p("A fast-PneuNet finger whose chambers and profile are shaped by Graph Mappers; the cavities become internal voids automatically. One finger is oriented twice into a gripper and carried through a pick-and-place while the chambers inflate, grasping an object.", { size: 22, after: 120 }));
+children.push(new Paragraph({ spacing: { after: 160 }, children: [
+  new TextRun({ text: "Walkthrough: ", size: 22, font: "Helvetica" }),
+  link("github.com/te5msride/cushion/blob/master/examples/pneunet_gripper.md",
+       "https://github.com/te5msride/cushion/blob/master/examples/pneunet_gripper.md", 22),
+] }));
 
 const doc = new Document({
   styles: {
