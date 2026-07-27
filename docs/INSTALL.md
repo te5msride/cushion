@@ -127,9 +127,12 @@ Cushion needs three paths at runtime:
   (`...\SOFA_v24.06.00_Win64\SOFA_v24.06.00_Win64\bin\...`).
 * `sofaRoot` = the folder **containing** `bin\`, not `bin\` itself. (The
   runner tolerates either, plus one level above.)
-* If `runSofa -l SofaPython3` complains about a missing Python DLL,
-  install **Python 3.10** (python.org, 64-bit), then:
-  `py -3.10 -m pip install numpy`.
+* Install **Python 3.10, 64-bit** (python.org) **with "Add Python to
+  PATH" checked** during setup — SofaPython3 loads `python310.dll` from
+  PATH, and a missing/off-PATH 3.10 is the usual "specified module could
+  not be found" / empty-scene failure. Then `py -3.10 -m pip install numpy`.
+  (Already installed but off PATH? Add its folder to System Properties →
+  Environment Variables → Path, or reinstall with the checkbox.)
 * Keep `projDir` on the **local disk**, not OneDrive/Dropbox; the
   controller writes CSV/monitor files every timestep and sync clients
   corrupt or lock them mid-write.

@@ -42,12 +42,32 @@ Python module cache. Restart Rhino after editing package files
 ## SOFA side
 
 **SOFA window opens but scene is empty (only DefaultAnimationLoop,
-Mouse...), Reload Scene crashes**
-SofaPython3 failed to load → `.py` scene silently skipped. Check
-`<projDir>/runsofa.log` for `Plugin loading failed`. Cause is almost
-always the Python 3.10 dependency → see INSTALL.md platform steps.
-(macOS: `Library not loaded: /usr/local/opt/python@3.10/...` → install
-python.org 3.10; the dyld fallback finds it in /Library/Frameworks.)
+InteractiveCamera, VisualStyle), Reload Scene crashes**
+SofaPython3 failed to load, so the `.py` scene was skipped. Check
+`<projDir>/runsofa.log` for `Plugin loading failed (…SofaPython3…)`.
+Cause is almost always the **Python 3.10** dependency. Verify it:
+`<SOFA>/bin/runSofa -l SofaPython3 -g batch -n 1` should print
+`Initializing with python version 3.10.x`.
+
+* **Windows** (`The specified module could not be found`): Windows can't
+  find `python310.dll`. Install **Python 3.10, 64-bit** from python.org
+  **with "Add Python to PATH" checked** (or add its folder to System
+  Properties → Environment Variables → Path). Then
+  `py -3.10 -m pip install numpy` and relaunch.
+* **macOS** (`Library not loaded: /usr/local/opt/python@3.10/...`):
+  install python.org 3.10; the dyld fallback finds it in
+  /Library/Frameworks. numpy:
+  `arch -x86_64 /Library/Frameworks/Python.framework/Versions/3.10/bin/python3.10 -m pip install numpy`.
+
+It must be **3.10** specifically (SofaPython3 v24.06 is built against
+it); 3.11/3.12 have no `python310` library and will not load.
+
+**`Plugin not found: "SofaLoader"` (also SofaSimpleFem, SofaDeformable,
+SofaValidation, SofaExporter…) in the log**
+Wrong SOFA version. Those legacy plugin names were removed in v24.12;
+Cushion targets **v24.06.00** exactly. Install v24.06.00. (Advanced: to
+run on a newer SOFA, update the `PLUGINS` list in
+`sofagh/runtime/scene.py` to that version's module names.)
 
 **`runSofa not found ... Checked:` list**
 `sofaRoot` wrong level or unset. Point at the folder containing `bin/`.
