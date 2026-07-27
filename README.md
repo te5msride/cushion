@@ -99,7 +99,7 @@ timestep, so the visited configurations trace out the workspace; the convex
 hull of the tip cloud gives its bounds. Nothing to touch, so it runs fast
 and makes a good first sim.
 
-![Tendon continuum robot](docs/media/continuum.gif)
+<p align="center"><img src="docs/media/continuum.gif" width="480" alt="Tendon continuum robot"/></p>
 
 **[PneuNet two-finger gripper](examples/pneunet_gripper.md)**: a
 fast-PneuNet finger whose chambers and profile are shaped by Graph Mappers
@@ -109,7 +109,7 @@ is designed flat, oriented twice into a gripper, and carried through a
 pick-and-place by a `SofaProtocol` while the chambers inflate: it descends,
 grips an object, and lifts it.
 
-![PneuNet two-finger gripper](docs/media/gripper.gif)
+<p align="center"><img src="docs/media/gripper.gif" width="480" alt="PneuNet two-finger gripper"/></p>
 
 ## Components
 
