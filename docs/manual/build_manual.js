@@ -416,7 +416,6 @@ children.push(new Paragraph({ children: [new PageBreak()] }));
 children.push(heading("Dependencies & Installation", HeadingLevel.HEADING_1));
 [
   "Rhino 8 with Grasshopper.",
-  "Pufferfish plugin (free, on food4Rhino): the examples use its Reduce Mesh component.",
   "SOFA v24.06.00 binaries with the SofaPython3, SoftRobots, STLIB and SofaValidation plugins (all included in the official release bundle). Use exactly v24.06.00 (SofaPython3 is built against a specific Python; other releases will not load the bundled plugins cleanly). Set the SOFA_ROOT environment variable to the installation folder, or wire the path into SofaRun.",
   "Python 3.10 with numpy, for SOFA's embedded interpreter (see the installation guide for per-platform steps; this is the most common setup issue).",
   "Gmsh (Python package), installed once into Rhino's own Python: run \"<rhino-python>\" -m pip install gmsh (the rhino-python path is in the installation guide). Do not rely on automatic install.",
@@ -506,6 +505,7 @@ children.push(new Paragraph({ children: [new PageBreak()] }));
 children.push(heading("Workflow Example: Tendon-Driven Continuum Robot", HeadingLevel.HEADING_1));
 [
   "A cylindrical continuum robot with three tendons at 120 degrees, built entirely from native Grasshopper geometry, actuated with a rotating pull direction, and post-processed into a workspace boundary.",
+  "Note: the examples use the Reduce Mesh component from the free Pufferfish plugin (food4Rhino); install it before opening them.",
   "1. Body: Circle (r 12) > Extrude (z 100) > Cap Holes > SofaBody (E 100 kPa, mass 0.03 kg).",
   "2. Tendons: three lines at radius 8, Divide Curve > SofaTendons (tree input), valueType force.",
   "3. Fixation: box around the base; monitor points along the axis.",

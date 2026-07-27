@@ -54,8 +54,6 @@ installation, and a worked example.
 * **Cushion plugin** — install `dist/Cushion.Components.gha` (drop it in
   Grasshopper's Components folder, or install the `.yak` from Rhino's
   Package Manager). Needed even to open the examples.
-* **Pufferfish** plugin (free, on food4Rhino) — the examples use its
-  **Reduce Mesh** component.
 * **SOFA v24.06.00** binaries with SofaPython3, SoftRobots, STLIB, and
   SofaValidation (all in the official release bundle):
   [github.com/sofa-framework/sofa/releases/tag/v24.06.00](https://github.com/sofa-framework/sofa/releases/tag/v24.06.00)
@@ -88,9 +86,11 @@ Full platform-specific steps: [docs/INSTALL.md](docs/INSTALL.md).
 ## Examples
 
 Two worked definitions live in [`examples/`](examples). Install the Cushion
-plugin and Pufferfish first (see [docs/INSTALL.md](docs/INSTALL.md)), then
-open the `.gh`. Each has a `.md` walkthrough with a zoomable screenshot of
-the full canvas.
+plugin first (see [docs/INSTALL.md](docs/INSTALL.md)), then open the `.gh`.
+Each has a `.md` walkthrough with a zoomable screenshot of the full canvas.
+
+> **Note:** both examples use the **Reduce Mesh** component from the free
+> **Pufferfish** plugin (food4Rhino) — install it before opening them.
 
 **[Tendon continuum robot](examples/continuum_robot.md)**: a cylindrical
 backbone driven by three cables at 0° / 120° / 240°. A single run sweeps the
@@ -99,6 +99,8 @@ timestep, so the visited configurations trace out the workspace; the convex
 hull of the tip cloud gives its bounds. Nothing to touch, so it runs fast
 and makes a good first sim.
 
+![Tendon continuum robot](docs/media/continuum.gif)
+
 **[PneuNet two-finger gripper](examples/pneunet_gripper.md)**: a
 fast-PneuNet finger whose chambers and profile are shaped by Graph Mappers
 and meshed with TriRemesh; the cavities become internal voids automatically
@@ -106,6 +108,8 @@ and meshed with TriRemesh; the cavities become internal voids automatically
 is designed flat, oriented twice into a gripper, and carried through a
 pick-and-place by a `SofaProtocol` while the chambers inflate: it descends,
 grips an object, and lifts it.
+
+![PneuNet two-finger gripper](docs/media/gripper.gif)
 
 ## Components
 

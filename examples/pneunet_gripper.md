@@ -9,6 +9,8 @@
 parameters, collision model, orientation, protocol, target, and the
 run/results cluster.*
 
+![PneuNet gripper: reshape the profile and grasp](../docs/media/gripper.gif)
+
 Native-Grasshopper pneunet: chamber sizes and finger profile driven by
 Graph Mappers, meshed with TriRemesh, cavities become internal voids
 automatically (SofaBody.hollow, default on), no boolean difference

@@ -8,6 +8,8 @@
 *The full definition. Open the image to zoom into any region — parameters,
 tendon paths, body, profiles, and the run/results cluster.*
 
+![Continuum robot: reroute tendons and sweep](../docs/media/continuum.gif)
+
 Everything generated with native Grasshopper blocks, no file inputs.
 One simulation run sweeps the pull direction 360°; the Monitor logs the
 backbone every timestep, so the visited configurations form the
@@ -75,6 +77,11 @@ for interior coverage if wanted.
    separately gives the swept-body bound.
 4. `cableForce` / `cableDisp` → Quick Graph: commanded cosine lobes
    should appear in force; displacement shows the resulting shortening.
+
+![Deformed meshes and workspace](../docs/media/continuum_results.gif)
+
+*Generate deformed meshes with `SofaShape` and characterize the workspace
+with `SofaResults`.*
 
 ## Tuning notes
 
