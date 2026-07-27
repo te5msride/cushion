@@ -400,7 +400,7 @@ groups.forEach(g => {
   components.filter(c => c.group === g).forEach(c =>
     children.push(p("                " + c.name, { size: 20, after: 30 })));
 });
-children.push(p("6. Workflow Example: Tendon-Driven Continuum Robot", { size: 24, after: 80 }));
+children.push(p("6. Examples", { size: 24, after: 80 }));
 children.push(new Paragraph({ children: [new PageBreak()] }));
 
 // --- abstract
@@ -502,18 +502,19 @@ components.forEach((c, i) => {
 children.push(new Paragraph({ children: [new PageBreak()] }));
 
 // --- example
-children.push(heading("Workflow Example: Tendon-Driven Continuum Robot", HeadingLevel.HEADING_1));
-[
-  "A cylindrical continuum robot with three tendons at 120 degrees, built entirely from native Grasshopper geometry, actuated with a rotating pull direction, and post-processed into a workspace boundary.",
-  "Note: the examples use the Reduce Mesh component from the free Pufferfish plugin (food4Rhino); install it before opening them.",
-  "1. Body: Circle (r 12) > Extrude (z 100) > Cap Holes > SofaBody (E 100 kPa, mass 0.03 kg).",
-  "2. Tendons: three lines at radius 8, Divide Curve > SofaTendons (tree input), valueType force.",
-  "3. Fixation: box around the base; monitor points along the axis.",
-  "4. Profiles: 13 keyframes per channel sweeping Tmax * max(0, cos(30 deg * k - phi)); the resultant pull direction rotates 360 degrees.",
-  "5. SofaScene (gravity 0) > SofaPreview to verify > SofaRun.",
-  "6. SofaResults: tip positions per frame > convex hull = workspace bounds; cableForce/cableDisp confirm the commanded lobes.",
-  "[screenshot placeholders: canvas, SOFA window, workspace hull]",
-].forEach(t => children.push(p(t, { size: 22, after: 160 })));
+children.push(heading("Examples", HeadingLevel.HEADING_1));
+children.push(p("Two worked definitions ship with Cushion, in the examples folder of the repository (github.com/te5msride/cushion). Each has a full step-by-step walkthrough there; below is the complete Grasshopper canvas for each.", { size: 22, after: 140 }));
+children.push(p("Both examples use the Reduce Mesh component from the free Pufferfish plugin (food4Rhino); install it before opening them.", { size: 20, italic: true, color: GRAY, after: 260 }));
+
+children.push(p("Tendon-driven continuum robot", { bold: true, size: 26, after: 100 }));
+children.push(p("A cylindrical backbone driven by three tendons at 0/120/240 degrees. One run sweeps the pull direction a full turn while the Monitor logs the backbone, and the convex hull of the tip cloud gives the workspace bounds.", { size: 22, after: 160 }));
+children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 100 }, children: [img("continuum_canvas.png", 600)] }));
+children.push(p("Full walkthrough: examples/continuum_robot.md", { size: 20, color: GRAY, after: 320 }));
+
+children.push(p("PneuNet two-finger gripper", { bold: true, size: 26, after: 100 }));
+children.push(p("A fast-PneuNet finger whose chambers and profile are shaped by Graph Mappers; the cavities become internal voids automatically. One finger is oriented twice into a gripper and carried through a pick-and-place while the chambers inflate, grasping an object.", { size: 22, after: 160 }));
+children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 100 }, children: [img("gripper_canvas.png", 600)] }));
+children.push(p("Full walkthrough: examples/pneunet_gripper.md", { size: 20, color: GRAY, after: 160 }));
 
 const doc = new Document({
   styles: {
