@@ -3,12 +3,13 @@
 > **Requires** the Cushion plugin and **Pufferfish** (Reduce Mesh) installed
 > first — see [../docs/INSTALL.md](../docs/INSTALL.md).
 
-![Continuum robot Grasshopper canvas](img/continuum_canvas.png)
+<a href="img/continuum_canvas.png"><img src="img/continuum_canvas.png" width="760" alt="Continuum robot Grasshopper canvas"></a>
 
-*The full definition. Open the image to zoom into any region — parameters,
-tendon paths, body, profiles, and the run/results cluster.*
+*The full definition — click the image to open it full-resolution and zoom
+into any region: parameters, tendon paths, body, profiles, and the
+run/results cluster.*
 
-![Continuum robot: reroute tendons and sweep](../docs/media/continuum.gif)
+<img src="../docs/media/continuum.gif" width="400" alt="Continuum robot: reroute tendons and sweep">
 
 Everything generated with native Grasshopper blocks, no file inputs.
 One simulation run sweeps the pull direction 360°; the Monitor logs the
@@ -78,7 +79,7 @@ for interior coverage if wanted.
 4. `cableForce` / `cableDisp` → Quick Graph: commanded cosine lobes
    should appear in force; displacement shows the resulting shortening.
 
-![Deformed meshes and workspace](../docs/media/continuum_results.gif)
+<img src="../docs/media/continuum_results.gif" width="400" alt="Deformed meshes and workspace">
 
 *Generate deformed meshes with `SofaShape` and characterize the workspace
 with `SofaResults`.*

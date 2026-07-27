@@ -3,13 +3,13 @@
 > **Requires** the Cushion plugin and **Pufferfish** (Reduce Mesh) installed
 > first — see [../docs/INSTALL.md](../docs/INSTALL.md).
 
-![PneuNet gripper Grasshopper canvas](img/gripper_canvas.png)
+<a href="img/gripper_canvas.png"><img src="img/gripper_canvas.png" width="760" alt="PneuNet gripper Grasshopper canvas"></a>
 
-*The full definition. Open the image to zoom into any region — finger
-parameters, collision model, orientation, protocol, target, and the
-run/results cluster.*
+*The full definition — click the image to open it full-resolution and zoom
+into any region: finger parameters, collision model, orientation, protocol,
+target, and the run/results cluster.*
 
-![PneuNet gripper: reshape the profile and grasp](../docs/media/gripper.gif)
+<img src="../docs/media/gripper.gif" width="400" alt="PneuNet gripper: reshape the profile and grasp">
 
 Native-Grasshopper pneunet: chamber sizes and finger profile driven by
 Graph Mappers, meshed with TriRemesh, cavities become internal voids
