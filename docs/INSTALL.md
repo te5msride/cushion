@@ -17,31 +17,30 @@ Rhino 8 with Grasshopper. Document units **must be millimeters**
 built-in CPython (Python 3, `py39-rh8`). No separate Python is needed
 for the Grasshopper side.
 
-## 2. Getting the Cushion components
+## 2. Install the Cushion plugin (required, even for the examples)
 
-Pick one. **A** is all you need to run the bundled examples.
+The example definitions use the compiled Cushion components, so the
+plugin must be installed before you open them. Two ways:
 
-**A. Run the examples (recommended to try it out).**
-Clone or download this repository anywhere readable, then open
-`examples/continuum_robot.gh` or `examples/simple_gripper.gh` in
-Grasshopper. The Cushion components are already embedded in the
-definition as **Script components**; nothing to register or compile.
-You only set path inputs (§6).
+* **Package Manager (recommended):** in Rhino run `_PackageManager`,
+  search **Cushion**, install, and restart Rhino.
+* **Manual `.gha`:** copy `dist/Cushion.Components.gha` into Grasshopper's
+  components folder (*File ▸ Special Folders ▸ Components Folder*). On
+  Windows, right-click the file ▸ Properties ▸ **Unblock** first, then
+  restart Rhino.
 
-**B. Build the components yourself (authoring a new definition).**
-Create a Script component (Python 3) from each file in
-`gh/components/*.py`: paste the script, then add the inputs/outputs
-listed in that file's header comment. Exact signatures are in
-[COMPONENTS.md](COMPONENTS.md).
+Either way the components appear under a **Cushion** tab in Grasshopper.
 
-**C. Compiled plugin `.gha` (end-user path, once released).**
-When Cushion is published, install the **`.yak`** package via Rhino's
-`_PackageManager` (search "Cushion"). This is the food4rhino route and
-the intended way for non-developers. Manual fallback: drop the `.gha`
-into Grasshopper's components folder
-(*File ▸ Special Folders ▸ Components Folder*), right-click the file ▸
-**Unblock** (Windows), and restart Rhino; the components then appear
-under a **Cushion** tab. Not required to run the examples above.
+### Pufferfish
+
+The examples also use the **Reduce Mesh** component from the free
+**Pufferfish** plugin (food4Rhino). Install it the same way (Package
+Manager or drop-in) before opening the examples.
+
+### Open an example
+
+With both plugins installed, open `examples/continuum_robot.gh` or
+`examples/simple_gripper.gh`, then set the path inputs (§6).
 
 ## 3. SOFA v24.06.00
 

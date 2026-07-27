@@ -330,7 +330,7 @@ const children = [];
 children.push(new Paragraph({ spacing: { before: 3000 }, children: [] }));
 children.push(new Paragraph({
   alignment: AlignmentType.CENTER,
-  children: [img("logofinal.png", 300)],
+  children: [img("logo.png", 300)],
 }));
 children.push(new Paragraph({
   alignment: AlignmentType.CENTER, spacing: { before: 320 },
@@ -348,7 +348,7 @@ children.push(p("Cushion", { size: 24 }));
 children.push(p("noun", { italic: true, size: 24 }));
 children.push(p("A soft pad or pillow, typically placed on a sofa, that makes a rigid structure comfortable to work with.", { size: 24, after: 240 }));
 children.push(p("Also: an intermediate layer that softens the interface between two hard things.", { size: 24, after: 400 }));
-children.push(p("Cushion is the soft layer between Rhino and SOFA.", { italic: true, size: 24, color: GRAY }));
+children.push(p("Cushion is the soft layer between Grasshopper and SOFA.", { italic: true, size: 24, color: GRAY }));
 children.push(new Paragraph({ children: [new PageBreak()] }));
 
 // --- copyright page
@@ -416,7 +416,8 @@ children.push(new Paragraph({ children: [new PageBreak()] }));
 children.push(heading("Dependencies & Installation", HeadingLevel.HEADING_1));
 [
   "Rhino 8 with Grasshopper.",
-  "SOFA v24.06 binaries with the SofaPython3, SoftRobots, STLIB and SofaValidation plugins (all included in the official release bundle from www.sofa-framework.org/download). Set the SOFA_ROOT environment variable to the installation folder, or wire the path into SofaRun.",
+  "Pufferfish plugin (free, on food4Rhino): the examples use its Reduce Mesh component.",
+  "SOFA v24.06.00 binaries with the SofaPython3, SoftRobots, STLIB and SofaValidation plugins (all included in the official release bundle). Use exactly v24.06.00 (SofaPython3 is built against a specific Python; other releases will not load the bundled plugins cleanly). Set the SOFA_ROOT environment variable to the installation folder, or wire the path into SofaRun.",
   "Python 3.10 with numpy, for SOFA's embedded interpreter (see the installation guide for per-platform steps; this is the most common setup issue).",
   "Gmsh (Python package), installed once into Rhino's own Python: run \"<rhino-python>\" -m pip install gmsh (the rhino-python path is in the installation guide). Do not rely on automatic install.",
 ].forEach(t => children.push(new Paragraph({

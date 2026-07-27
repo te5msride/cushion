@@ -1,5 +1,13 @@
 # Example 1: tendon-driven continuum robot + workspace mapping
 
+> **Requires** the Cushion plugin and **Pufferfish** (Reduce Mesh) installed
+> first — see [../docs/INSTALL.md](../docs/INSTALL.md).
+
+![Continuum robot Grasshopper canvas](img/continuum_canvas.png)
+
+*The full definition. Open the image to zoom into any region — parameters,
+tendon paths, body, profiles, and the run/results cluster.*
+
 Everything generated with native Grasshopper blocks, no file inputs.
 One simulation run sweeps the pull direction 360°; the Monitor logs the
 backbone every timestep, so the visited configurations form the

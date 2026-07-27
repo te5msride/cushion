@@ -1,5 +1,14 @@
 # Example 2: PneuNet two-finger gripper
 
+> **Requires** the Cushion plugin and **Pufferfish** (Reduce Mesh) installed
+> first — see [../docs/INSTALL.md](../docs/INSTALL.md).
+
+![PneuNet gripper Grasshopper canvas](img/gripper_canvas.png)
+
+*The full definition. Open the image to zoom into any region — finger
+parameters, collision model, orientation, protocol, target, and the
+run/results cluster.*
+
 Native-Grasshopper pneunet: chamber sizes and finger profile driven by
 Graph Mappers, meshed with TriRemesh, cavities become internal voids
 automatically (SofaBody.hollow, default on), no boolean difference

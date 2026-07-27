@@ -11,7 +11,7 @@
   Also: an intermediate layer that softens the interface between two hard things.
 </p>
 
-<p align="center"><i>Cushion is the soft layer between Rhino and SOFA.</i></p>
+<p align="center"><i>Cushion is the soft layer between Grasshopper and SOFA.</i></p>
 
 ---
 
@@ -50,8 +50,12 @@ installation, and a worked example.
 
 ## Requirements
 
-* **Rhino 8**, Grasshopper Script components, Python 3 mode. Document units
-  in millimeters.
+* **Rhino 8** with Grasshopper. Document units in millimeters.
+* **Cushion plugin** — install `dist/Cushion.Components.gha` (drop it in
+  Grasshopper's Components folder, or install the `.yak` from Rhino's
+  Package Manager). Needed even to open the examples.
+* **Pufferfish** plugin (free, on food4Rhino) — the examples use its
+  **Reduce Mesh** component.
 * **SOFA v24.06.00** binaries with SofaPython3, SoftRobots, STLIB, and
   SofaValidation (all in the official release bundle):
   [github.com/sofa-framework/sofa/releases/tag/v24.06.00](https://github.com/sofa-framework/sofa/releases/tag/v24.06.00)
@@ -64,11 +68,11 @@ Full platform-specific steps: [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Quickstart (inflate a cylinder)
 
-1. Install per [docs/INSTALL.md](docs/INSTALL.md); clone or copy this repo.
-2. In Grasshopper, create Script components from `gh/components/*.py` (paste
-   the script, add inputs/outputs per the header comment, exact signatures
-   in [docs/COMPONENTS.md](docs/COMPONENTS.md)). Or just open one of the
-   example definitions below, where the components are already wired.
+1. Install everything per [docs/INSTALL.md](docs/INSTALL.md): the Cushion
+   plugin, Pufferfish, SOFA, Python 3.10, and gmsh.
+2. In Grasshopper, drop the Cushion components from the **Cushion** tab onto
+   the canvas and wire them as below. (Or skip to the examples for ready-made
+   definitions.)
 3. Model a solid cylinder (r 15, h 100 mm) → `SofaBody.geo`. Put a smaller
    closed cylinder inside → `SofaCavity.geo`, channel 1.
 4. Box around one end cap → `SofaBody.fixations`; a few points along the
@@ -83,9 +87,10 @@ Full platform-specific steps: [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Examples
 
-Two worked definitions live in [`examples/`](examples), both built entirely
-from native Grasshopper blocks, no external mesh files. Each has a `.md`
-walkthrough alongside the `.gh`.
+Two worked definitions live in [`examples/`](examples). Install the Cushion
+plugin and Pufferfish first (see [docs/INSTALL.md](docs/INSTALL.md)), then
+open the `.gh`. Each has a `.md` walkthrough with a zoomable screenshot of
+the full canvas.
 
 **[Tendon continuum robot](examples/continuum_robot.md)**: a cylindrical
 backbone driven by three cables at 0° / 120° / 240°. A single run sweeps the
