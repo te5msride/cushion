@@ -37,14 +37,6 @@ GH geometry ──► STL/STEP ──► gmsh tets ──► scene.json + input.
       GH points/curves ◄── monitor data ◄── runSofa (GUI or batch)
 ```
 
-<p align="center">
-  <a href="https://www.youtube.com/watch?v=2psFF2CLAok">
-    <img src="https://img.youtube.com/vi/2psFF2CLAok/maxresdefault.jpg" width="560" alt="Watch the Cushion demo on YouTube"/>
-  </a>
-  <br/>
-  <a href="https://www.youtube.com/watch?v=2psFF2CLAok">▶ Watch the demo</a>
-</p>
-
 ## Status
 
 Working prototype (v0.1), tested on Windows 11 and macOS with Rhino 8 and
