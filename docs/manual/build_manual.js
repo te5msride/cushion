@@ -433,6 +433,7 @@ children.push(heading("Installing Cushion", HeadingLevel.HEADING_2));
 })));
 children.push(heading("Links", HeadingLevel.HEADING_2));
 [
+  ["Cushion on food4Rhino: ", "food4rhino.com/en/app/cushion", "https://www.food4rhino.com/en/app/cushion?lang=en"],
   ["Rhino 8: ", "www.rhino3d.com", "https://www.rhino3d.com"],
   ["SOFA v24.06 binaries: ", "www.sofa-framework.org/download", "https://www.sofa-framework.org/download/"],
   ["Python 3.10 (python.org installer): ", "www.python.org/downloads/release/python-31011", "https://www.python.org/downloads/release/python-31011/"],

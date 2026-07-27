@@ -30,6 +30,8 @@ plugin must be installed before you open them. Two ways:
   restart Rhino.
 
 Either way the components appear under a **Cushion** tab in Grasshopper.
+The listing (with the download) is on food4Rhino:
+https://www.food4rhino.com/en/app/cushion
 
 ### Pufferfish
 

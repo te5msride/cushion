@@ -56,9 +56,11 @@ installation, and a worked example.
 ## Requirements
 
 * **Rhino 8** with Grasshopper. Document units in millimeters.
-* **Cushion plugin** — install `dist/Cushion.Components.gha` (drop it in
-  Grasshopper's Components folder, or install the `.yak` from Rhino's
-  Package Manager). Needed even to open the examples.
+* **Cushion plugin** — get it from
+  [food4Rhino](https://www.food4rhino.com/en/app/cushion?lang=en) or Rhino's
+  Package Manager (`_PackageManager`, search "Cushion"), or drop
+  `dist/Cushion.Components.gha` into Grasshopper's Components folder. Needed
+  even to open the examples.
 * **SOFA v24.06.00** binaries with SofaPython3, SoftRobots, STLIB, and
   SofaValidation (all in the official release bundle):
   [github.com/sofa-framework/sofa/releases/tag/v24.06.00](https://github.com/sofa-framework/sofa/releases/tag/v24.06.00)
