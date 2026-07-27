@@ -82,6 +82,11 @@ below: launch Rhino, drop any **Python 3 Script component** onto a
 Grasshopper canvas (or just open one of the example definitions and let
 it load). Then the folder exists.
 
+> New to Grasshopper? To find the component: **double-click an empty spot
+> on the canvas** and type "Python 3 Script" to search, or grab it from
+> the **Math** tab → **Script** panel (the Python icon). Drop it on the
+> canvas and it runs once, which is all that's needed here.
+
 Locate Rhino 8's Python:
 
 * **Windows:** `%USERPROFILE%\.rhinocode\py39-rh8\python.exe`
