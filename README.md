@@ -24,7 +24,7 @@ writes a runnable SOFA scene, launches the simulation, and brings the
 results (trajectories, forces, contacts, deformed shapes) back onto the
 canvas.
 
-*Developed by Trevor Exley and Anderson Brazil Nardin.*
+*Developed by Trevor Exley and Anderson Nardin.*
 
 The scene structure follows the Monolithic Unit soft-robotics pipeline
 (Exley, Nardin, Trunin, Cafiso, Beccai; [arXiv:2511.13120](https://arxiv.org/abs/2511.13120)):
