@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use Cushion, please cite it as below."
+title: "Cushion: soft-robotics simulation in Grasshopper, powered by SOFA"
+abstract: >-
+  A Grasshopper plugin that connects parametric modeling in Rhino and
+  Grasshopper to SOFA's soft-body finite-element solver. Deformable bodies,
+  pneumatic cavities, tendons, stiffened regions, and actuation schedules are
+  defined as components; Cushion meshes the geometry, runs the SOFA simulation,
+  and returns trajectories, forces, contacts, and deformed shapes to Grasshopper.
+type: software
+authors:
+  - given-names: Trevor
+    family-names: Exley
+    affiliation: "Istituto Italiano di Tecnologia"
+  - given-names: Anderson
+    family-names: "Brazil Nardin"
+    affiliation: "Istituto Italiano di Tecnologia"
+version: "0.1.0"
+date-released: "2026-07-27"
+license: LGPL-2.1-or-later
+repository-code: "https://github.com/te5msride/cushion"
+doi: 10.5281/zenodo.21625292
+keywords:
+  - soft robotics
+  - simulation
+  - Grasshopper
+  - Rhino
+  - SOFA
+  - finite element method
