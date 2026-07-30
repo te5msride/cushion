@@ -5,3 +5,6 @@ __pycache__/
 sofa_projects/
 docs/manual/node_modules/
 docs/manual/package*.json
+
+# local-only video recording script (not for the public repo)
+docs/getting-started-video-script.md
