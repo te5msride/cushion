@@ -62,13 +62,14 @@ Platform extraction details are in §5 (Windows) / §6 (macOS).
 
 This is **separate** from Rhino's Python; it is the interpreter
 SofaPython3 links against. Details per platform in §5 / §6. Verify SOFA
-works **before** Grasshopper:
+works **before** Grasshopper by just launching it:
 
 ```
-<SOFA>/bin/runSofa -l SofaPython3 -g batch -n 1
+<SOFA>/bin/runSofa
 ```
 
-Expected: `[SofaPython3] Initializing with python version 3.10.x` and no
+The SOFA GUI should open. In its startup log, look for
+`[SofaPython3] Initializing with python version 3.10.x` and no
 `Plugin loading failed`. If you see a missing-Python error, §5/§6 fix it.
 
 ## 5. gmsh (manual: into Rhino's CPython)
