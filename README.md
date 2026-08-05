@@ -16,6 +16,7 @@
 <p align="center">
   <a href="https://doi.org/10.5281/zenodo.21625292"><img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21625292-blue.svg" alt="DOI"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-LGPL--2.1-blue.svg" alt="License: LGPL-2.1"/></a>
+  <a href="https://www.youtube.com/playlist?list=PLZcYzST93d40"><img src="https://img.shields.io/badge/YouTube-tutorials-red.svg?logo=youtube&logoColor=white" alt="YouTube tutorials"/></a>
 </p>
 
 ---
@@ -41,6 +42,14 @@ GH geometry ──► STL/STEP ──► gmsh tets ──► scene.json + input.
                                               │
       GH points/curves ◄── monitor data ◄── runSofa (GUI or batch)
 ```
+
+## Videos
+
+📺 **Installation tutorial now out.** All Cushion videos live in one
+[YouTube playlist](https://www.youtube.com/playlist?list=PLZcYzST93d40):
+
+* [Introducing Cushion](https://www.youtube.com/watch?v=2psFF2CLAok) — release overview.
+* [Installation tutorial](https://www.youtube.com/watch?v=xLiRbIvQZjo) — clean machine to first running simulation.
 
 ## Status
 
