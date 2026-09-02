@@ -18,23 +18,55 @@ from controller import PressureScheduleController
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-PLUGINS = (
-    "MultiThreading SoftRobots SofaPython3 SofaLoader SofaSimpleFem SofaEngine "
-    "SofaDeformable SofaImplicitOdeSolver SofaConstraint SofaSparseSolver SofaRigid "
-    "SofaOpenglVisual Sofa.Component.AnimationLoop "
-    "Sofa.Component.Collision.Detection.Algorithm Sofa.Component.Collision.Detection.Intersection "
-    "Sofa.Component.Collision.Geometry Sofa.Component.Collision.Response.Contact "
-    "Sofa.Component.Topology.Container.Constant Sofa.Component.Constraint.Lagrangian.Solver "
-    "Sofa.Component.IO.Mesh Sofa.Component.LinearSolver.Direct Sofa.Component.Mass "
-    "Sofa.Component.StateContainer Sofa.Component.LinearSolver.Iterative "
-    "Sofa.Component.Mapping.Linear Sofa.Component.ODESolver.Backward Sofa.Component.Setting "
-    "Sofa.Component.SolidMechanics.FEM.Elastic Sofa.Component.Visual "
-    "Sofa.Component.Constraint.Lagrangian.Correction Sofa.Component.SolidMechanics.Spring "
-    "Sofa.GL.Component.Rendering3D Sofa.Component.LinearSolver.Preconditioner "
-    "Sofa.Component.Engine.Select Sofa.Component.Mapping.NonLinear "
-    "Sofa.Component.Constraint.Lagrangian.Model Sofa.Component.Topology.Container.Dynamic "
-    "SofaValidation SofaExporter"
-)
+# Granular Sofa.Component.* modules exist in both v24.06 and v26.06. The old
+# monolithic aliases (SofaLoader, SofaConstraint, SofaExporter, ...) were
+# removed in v24.12, so they are omitted here for forward compatibility.
+# VTKExporter (old SofaExporter) now lives in Sofa.Component.Playback.
+# Each name is loaded independently (see _load_plugins) so a module that a
+# given release renames or drops warns instead of aborting the whole scene.
+PLUGINS = [
+    "MultiThreading",
+    "SoftRobots",
+    "SofaPython3",
+    "SofaValidation",  # Monitor (still a standalone plugin in both releases)
+    "Sofa.Component.AnimationLoop",
+    "Sofa.Component.Collision.Detection.Algorithm",
+    "Sofa.Component.Collision.Detection.Intersection",
+    "Sofa.Component.Collision.Geometry",
+    "Sofa.Component.Collision.Response.Contact",
+    "Sofa.Component.Constraint.Lagrangian.Correction",
+    "Sofa.Component.Constraint.Lagrangian.Model",
+    "Sofa.Component.Constraint.Lagrangian.Solver",
+    "Sofa.Component.Engine.Select",
+    "Sofa.Component.IO.Mesh",
+    "Sofa.Component.LinearSolver.Direct",
+    "Sofa.Component.LinearSolver.Iterative",
+    "Sofa.Component.LinearSolver.Preconditioner",
+    "Sofa.Component.Mapping.Linear",
+    "Sofa.Component.Mapping.NonLinear",
+    "Sofa.Component.Mass",
+    "Sofa.Component.ODESolver.Backward",
+    "Sofa.Component.Playback",  # VTKExporter (was in SofaExporter)
+    "Sofa.Component.Setting",
+    "Sofa.Component.SolidMechanics.FEM.Elastic",
+    "Sofa.Component.SolidMechanics.Spring",
+    "Sofa.Component.StateContainer",
+    "Sofa.Component.Topology.Container.Constant",
+    "Sofa.Component.Topology.Container.Dynamic",
+    "Sofa.Component.Visual",
+    "Sofa.GL.Component.Rendering3D",
+]
+
+
+def _load_plugins(rootNode):
+    """Load each plugin on its own so a name a given SOFA release does not
+    ship (v24.06 vs v26.06 module churn) is logged and skipped instead of
+    killing the scene. Check runsofa.log for '[cushion] plugin skipped'."""
+    for p in PLUGINS:
+        try:
+            rootNode.addObject("RequiredPlugin", name=p, pluginName=p)
+        except Exception as exc:  # noqa: BLE001
+            print(f"[cushion] plugin skipped: {p} ({exc})")
 
 
 def _abspath(rel):
@@ -224,7 +256,7 @@ def createScene(rootNode):
     with open(os.path.join(HERE, "scene.json")) as f:
         spec = json.load(f)
 
-    rootNode.addObject("RequiredPlugin", pluginName=PLUGINS)
+    _load_plugins(rootNode)
     rootNode.dt = spec.get("dt", 0.01)
     rootNode.gravity.value = spec.get("gravity", [0.0, 0.0, -9810.0])
     rootNode.addObject("VisualStyle",
