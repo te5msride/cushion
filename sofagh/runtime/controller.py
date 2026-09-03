@@ -11,10 +11,41 @@ Responsibilities (generalized from the Monolithic Unit WholeGripperController):
 """
 
 import csv
+import math
 import os
+import select
+import sys
 
 import numpy as np
 import Sofa.Core
+
+
+def _rot_matrix(axis, angle):
+    """Rodrigues rotation matrix for `angle` radians about unit `axis`."""
+    a = np.asarray(axis, dtype=float)
+    a = a / (np.linalg.norm(a) or 1.0)
+    x, y, z = a
+    c, s, C = math.cos(angle), math.sin(angle), 1.0 - math.cos(angle)
+    return np.array([
+        [c + x * x * C,     x * y * C - z * s, x * z * C + y * s],
+        [y * x * C + z * s, c + y * y * C,     y * z * C - x * s],
+        [z * x * C - y * s, z * y * C + x * s, c + z * z * C],
+    ])
+
+
+def _transform_rest(dofs, translate, angle, axis, pivot):
+    """Rigidly move a body's REST shape: rotate `angle` rad about `axis`
+    through `pivot`, then translate. Applied to rest positions so the body
+    is dragged there through its fixations (same mechanism as SofaProtocol).
+    Insertion (translate along axis) and roll (about the same axis) commute,
+    so callers may apply either or both per step in any order."""
+    rest = np.array(dofs.rest_position.value, dtype=float)
+    if abs(angle) > 1e-12:
+        rest = (rest - pivot) @ _rot_matrix(axis, angle).T + pivot
+    t = np.asarray(translate, dtype=float)
+    if np.any(np.abs(t) > 1e-12):
+        rest = rest + t
+    dofs.rest_position.value = rest.tolist()
 
 
 def closest_node_indices(points, positions):
@@ -30,6 +61,8 @@ class PressureScheduleController(Sofa.Core.Controller):
 
     def __init__(self, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
+        # required for the controller to receive input (keypress) events
+        self.listening = True
         self.node = kwargs["node"]
         self.spec = kwargs["spec"]
         self.here = kwargs["here"]
@@ -44,10 +77,13 @@ class PressureScheduleController(Sofa.Core.Controller):
         # schedule[channel] = list of pressures (kPa) at sample_rate
         self.schedule = {}
         csv_path = os.path.join(self.here, self.spec.get("input_csv", "input.csv"))
-        with open(csv_path) as f:
-            for row in csv.reader(f):
-                for k, val in enumerate(row, start=1):
-                    self.schedule.setdefault(k, []).append(float(val))
+        try:
+            with open(csv_path) as f:
+                for row in csv.reader(f):
+                    for k, val in enumerate(row, start=1):
+                        self.schedule.setdefault(k, []).append(float(val))
+        except FileNotFoundError:
+            pass  # teleop runs need no schedule
         n_rows = len(next(iter(self.schedule.values()), []))
         self.duration = self.pre_time + n_rows / self.sample_rate + self.pos_time
 
@@ -71,8 +107,11 @@ class PressureScheduleController(Sofa.Core.Controller):
                     "name": f"{body['name']}.{cable['name']}",
                     "unit": "mN" if is_force else "mm"})
             if body.get("monitor_points"):
-                monitor = getattr(body_node, "monitor_" + body["name"])
-                self.monitors.append((body_node, monitor, body["monitor_points"]))
+                # Monitor object may be absent (component not shipped in some
+                # SOFA builds, e.g. the v26.06 binary bundle); skip if so.
+                monitor = getattr(body_node, "monitor_" + body["name"], None)
+                if monitor is not None:
+                    self.monitors.append((body_node, monitor, body["monitor_points"]))
 
         # scheduled rigid motion (SofaProtocol): keyframed offset applied
         # through rest positions -- drags the body via its fixations
@@ -91,9 +130,52 @@ class PressureScheduleController(Sofa.Core.Controller):
         self.target_monitors = []
         for tgt in self.spec.get("targets", []):
             tnode = getattr(self.node, tgt["name"])
-            self.target_monitors.append(tnode.collision.posetrack)
+            posetrack = getattr(tnode.collision, "posetrack", None)
+            if posetrack is not None:
+                self.target_monitors.append(posetrack)
 
         self.channels = sorted({a["channel"] for a in self.actuators})
+
+        # --- Teleoperation (keyboard) -------------------------------------
+        # Live control instead of / alongside the schedule. Enable via a
+        # scene.json "teleop" block or the CUSHION_TELEOP env var (so it
+        # works with no GH change). Keys are letters (GUI-agnostic):
+        #   I / K or + / -  : pressure up / down (active channel)
+        #   W / S           : insert  forward / back  (along axis)
+        #   A / D           : twist   left / right     (roll about axis)
+        #   X               : reset pressure/insert/twist to zero
+        tele = self.spec.get("teleop") or {}
+        self.tele_on = bool(tele.get("enabled")) or os.environ.get("CUSHION_TELEOP")
+        if self.tele_on:
+            self.tele_channel = int(tele.get("channel", self.channels[0]
+                                              if self.channels else 1))
+            self.tele_p_step = float(tele.get("pressure_step", 1.0))   # kPa
+            self.tele_p_min = float(tele.get("pressure_min", 0.0))
+            self.tele_p_max = float(tele.get("pressure_max", 50.0))
+            self.tele_ins_step = float(tele.get("insert_step", 1.0))   # mm
+            self.tele_tw_step = float(tele.get("twist_step", 5.0))     # deg
+            axis = np.asarray(tele.get("axis", [0.0, 0.0, 1.0]), dtype=float)
+            self.tele_axis = axis / (np.linalg.norm(axis) or 1.0)
+            self.tele_pivot = (np.asarray(tele["pivot"], dtype=float)
+                               if tele.get("pivot") else None)  # else 1st step
+            body_name = tele.get("body")
+            bodies = self.spec.get("bodies", [])
+            if body_name is None and bodies:
+                body_name = bodies[0]["name"]
+            self.tele_dofs = (getattr(getattr(self.node, body_name), "tetras")
+                              if body_name else None)
+            self.tele_pressure = 0.0     # commanded, kPa
+            self.tele_insert = 0.0        # commanded, mm  (target)
+            self.tele_twist = 0.0         # commanded, deg (target)
+            self._ins_applied = 0.0
+            self._tw_applied = 0.0
+            # stdin fallback: works even if the GUI does not forward keys.
+            # Type the letters in this terminal + Enter.
+            self._stdin_ok = bool(getattr(sys.stdin, "isatty", lambda: False)())
+            print("[sofagh] TELEOP on  ch{}  keys: I/K pressure  W/S insert  "
+                  "A/D twist  X reset".format(self.tele_channel))
+            print("[sofagh] type keys in the SOFA window, OR in this terminal "
+                  "+ Enter (e.g. 'iii' then Enter = +3 pressure steps)")
 
         # Purge stale VTK shape frames from previous runs. VTKExporter uses
         # overwrite=False and restarts its counter at 0 each run, so a
@@ -153,6 +235,8 @@ class PressureScheduleController(Sofa.Core.Controller):
 
         if self.first_step:
             self.first_step = False
+            if not getattr(self, "_cam_framed", False):
+                self._frame_camera()
             for body_node, monitor, points in self.monitors:
                 idx = closest_node_indices(points, body_node.tetras.position.value)
                 monitor.indices = idx
@@ -184,13 +268,38 @@ class PressureScheduleController(Sofa.Core.Controller):
                 dofs.rest_position.value = rest.tolist()
                 proto["applied"] = target
 
-        # command actuators from the schedule
-        if self.pre_time < t < (self.duration - self.pos_time):
+        # teleop: pull any keys typed in the terminal (GUI-independent)
+        self._poll_stdin()
+
+        # teleop: apply commanded base insert/twist to the rest shape
+        if self.tele_on and self.tele_dofs is not None:
+            if self.tele_pivot is None:
+                rest0 = np.array(self.tele_dofs.rest_position.value, dtype=float)
+                self.tele_pivot = rest0.mean(axis=0)
+            d_ins = self.tele_insert - self._ins_applied
+            d_tw = math.radians(self.tele_twist - self._tw_applied)
+            if abs(d_ins) > 1e-12 or abs(d_tw) > 1e-12:
+                _transform_rest(self.tele_dofs, self.tele_axis * d_ins,
+                                d_tw, self.tele_axis, self.tele_pivot)
+                self._ins_applied = self.tele_insert
+                self._tw_applied = self.tele_twist
+
+        # command actuators from the schedule (skips the teleop channel)
+        if self.schedule and self.pre_time < t < (self.duration - self.pos_time):
             row = int((t - self.pre_time) * self.sample_rate)
             for act in self.actuators:
+                if self.tele_on and act["channel"] == self.tele_channel:
+                    continue
                 samples = self.schedule.get(act["channel"], [])
                 if samples:
                     v = samples[min(row, len(samples) - 1)]
+                    act["constraint"].value[0] = v * dt if act["scale_dt"] else v
+
+        # teleop: drive the active channel's pressure live every step
+        if self.tele_on:
+            for act in self.actuators:
+                if act["channel"] == self.tele_channel:
+                    v = self.tele_pressure
                     act["constraint"].value[0] = v * dt if act["scale_dt"] else v
 
         # measured values (pressure kPa / cable force mN)
@@ -222,9 +331,97 @@ class PressureScheduleController(Sofa.Core.Controller):
                 with open(self.cables_csv, "a", newline="") as f:
                     csv.writer(f).writerow(row)
 
-        if t > self.duration:
+        if t > self.duration and not self.tele_on:
             print("[sofagh] schedule complete, stopping animation")
             self.node.animate.value = False
+
+    def _frame_camera(self):
+        """Point the scene camera at the geometry AABB. v26.06 GUIs ignore
+        the old Qt view file, so frame it here for a usable default view."""
+        if getattr(self, "_cam_framed", False) or self.spec.get("camera"):
+            return  # already framed, or explicit camera in scene.json wins
+        cam = getattr(self.node, "camera", None)
+        if cam is None:
+            return
+        pts = []
+        for body in self.spec.get("bodies", []):
+            bn = getattr(self.node, body["name"], None)
+            if bn is not None and hasattr(bn, "tetras"):
+                pts.append(np.asarray(bn.tetras.position.value))
+        for tgt in self.spec.get("targets", []):
+            tn = getattr(self.node, tgt["name"], None)
+            col = getattr(tn, "collision", None) if tn is not None else None
+            pos = getattr(col, "points", None) if col is not None else None
+            if pos is not None:
+                pts.append(np.asarray(pos.position.value))
+        if not pts:
+            return
+        P = np.vstack(pts)
+        lo, hi = P.min(axis=0), P.max(axis=0)
+        center = (lo + hi) / 2.0
+        diag = float(np.linalg.norm(hi - lo)) or 100.0
+        # 3/4 view from -Y / +Z (scene is Z-up, gravity -Z)
+        eye = center + np.array([0.0, -1.6, 0.9]) * diag
+        try:
+            cam.position.value = eye.tolist()
+            cam.lookAt.value = center.tolist()
+            cam.zNear.value = max(diag * 0.01, 0.1)
+            cam.zFar.value = diag * 20.0
+            self._cam_framed = True
+            print("[sofagh] camera framed on geometry (diag={:.1f}mm)".format(diag))
+        except Exception:  # noqa: BLE001
+            pass
+
+    def onSimulationInitDoneEvent(self, event):
+        self._frame_camera()
+
+    def _poll_stdin(self):
+        """Non-blocking read of teleop keys typed into the terminal.
+        Line-buffered: user types letters then Enter."""
+        if not (self.tele_on and self._stdin_ok):
+            return
+        while select.select([sys.stdin], [], [], 0)[0]:
+            line = sys.stdin.readline()
+            if not line:
+                break
+            for ch in line.strip():
+                self._apply_key(ch)
+
+    def onKeypressedEvent(self, event):
+        try:
+            self._apply_key(event["key"])
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _apply_key(self, raw):
+        if not self.tele_on:
+            return
+        key = str(raw).upper()
+        if key in ("I", "+", "="):
+            self.tele_pressure = min(self.tele_p_max,
+                                     self.tele_pressure + self.tele_p_step)
+        elif key in ("K", "-"):
+            self.tele_pressure = max(self.tele_p_min,
+                                     self.tele_pressure - self.tele_p_step)
+        elif key == "W":
+            self.tele_insert += self.tele_ins_step
+        elif key == "S":
+            self.tele_insert -= self.tele_ins_step
+        elif key == "D":
+            self.tele_twist += self.tele_tw_step
+        elif key == "A":
+            self.tele_twist -= self.tele_tw_step
+        elif key == "X":
+            self.tele_pressure = self.tele_insert = self.tele_twist = 0.0
+        else:
+            return
+        msg = "[teleop] P={:.1f}kPa  insert={:+.1f}mm  twist={:+.1f}deg".format(
+            self.tele_pressure, self.tele_insert, self.tele_twist)
+        print(msg)                 # -> launching terminal's stdout
+        try:
+            Sofa.msg_info(self, msg)   # -> in-GUI Log panel
+        except Exception:  # noqa: BLE001
+            pass
 
     def onAnimateEndEvent(self, event):
         # contact map: sampled after the step (collision resolved this step)

@@ -6,7 +6,8 @@ Scene graph mirrors the Monolithic Unit reference (Nardin/Exley):
 FreeMotionAnimationLoop + GenericConstraintSolver, per-body implicit
 Euler + SparseLDL, corotational tet FEM, MeshROI overlay stiffening for
 membranes/sensors, SurfacePressureConstraint cavities, barycentric
-collision/visual surfaces, SofaValidation Monitor on tracked points.
+collision/visual surfaces, Monitor on tracked points where available
+(SofaValidation ships in v24.06 but not the v26.06 binary bundle).
 
 Units: mm, kPa, kg, s (gravity -9810 mm/s^2).
 """
@@ -28,7 +29,8 @@ PLUGINS = [
     "MultiThreading",
     "SoftRobots",
     "SofaPython3",
-    "SofaValidation",  # Monitor (still a standalone plugin in both releases)
+    "SofaValidation",  # Monitor: present in v24.06, absent from v26.06 bundle
+                       # (loaded tolerantly; skipped where unavailable)
     "Sofa.Component.AnimationLoop",
     "Sofa.Component.Collision.Detection.Algorithm",
     "Sofa.Component.Collision.Detection.Intersection",
@@ -64,9 +66,35 @@ def _load_plugins(rootNode):
     killing the scene. Check runsofa.log for '[cushion] plugin skipped'."""
     for p in PLUGINS:
         try:
-            rootNode.addObject("RequiredPlugin", name=p, pluginName=p)
+            # sanitise the node name: dotted plugin ids trip the
+            # special-character scene check (v26.06) if used verbatim.
+            rootNode.addObject("RequiredPlugin", name=p.replace(".", "_"),
+                               pluginName=p)
         except Exception as exc:  # noqa: BLE001
             print(f"[cushion] plugin skipped: {p} ({exc})")
+
+
+def _try_add(node, comp, **kwargs):
+    """addObject `comp`, returning the object or None if this SOFA build
+    does not provide that component (unknown types raise in SofaPython3).
+    Version-agnostic: no dependency on any factory-introspection API."""
+    try:
+        return node.addObject(comp, **kwargs)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _add_first(node, comps, **kwargs):
+    """addObject the first component in `comps` this SOFA build provides.
+    Lets one scene span releases that renamed components (e.g.
+    GenericConstraintSolver -> BlockGaussSeidelConstraintSolver in v25.12,
+    DefaultContactManager -> CollisionResponse in v24.12)."""
+    for comp in comps:
+        obj = _try_add(node, comp, **kwargs)
+        if obj is not None:
+            return obj
+    print(f"[cushion] none of {comps} available in this SOFA build")
+    return None
 
 
 def _abspath(rel):
@@ -85,8 +113,11 @@ def _add_floor(rootNode, floor):
     node.addObject("TriangleCollisionModel", simulated=False, moving=False)
     node.addObject("LineCollisionModel", simulated=False, moving=False)
     node.addObject("PointCollisionModel", simulated=False, moving=False)
-    node.addObject("OglModel", position=positions, triangles=triangles,
-                   color=[0.5, 0.5, 0.5, 0.4])
+    # OglModel is a BaseState; keep it in its own child so it does not clash
+    # with the node's MechanicalObject (v26.06 flags two states per node).
+    node.addChild("visual").addObject("OglModel", position=positions,
+                                      triangles=triangles,
+                                      color=[0.5, 0.5, 0.5, 0.4])
 
 
 def _add_target(rootNode, tgt):
@@ -111,9 +142,11 @@ def _add_target(rootNode, tgt):
     col.addObject("RigidMapping")
     # 3-point pose track (indices bound by the controller) so
     # AnimationPreview can replay the target's rigid motion
-    col.addObject("Monitor", name="posetrack", template="Vec3d", listening=1,
-                  showPositions=False, ExportPositions=True,
-                  fileName=os.path.join(HERE, "monitor", "target_" + tgt["name"]))
+    if _try_add(col, "Monitor", name="posetrack", template="Vec3d", listening=1,
+                showPositions=False, ExportPositions=True,
+                fileName=os.path.join(HERE, "monitor", "target_" + tgt["name"])) is None:
+        print("[cushion] Monitor unavailable in this SOFA build; "
+              "target pose-track export disabled")
 
     visu = t.addChild("visual")
     visu.addObject("MeshSTLLoader", name="loader", filename=_abspath(tgt["mesh"]))
@@ -156,10 +189,12 @@ def _add_body(rootNode, body, spec):
 
     # Monitor tracked points (indices bound by controller on first step)
     if body.get("monitor_points"):
-        b.addObject("Monitor", name="monitor_" + body["name"], template="Vec3d",
+        if _try_add(b, "Monitor", name="monitor_" + body["name"], template="Vec3d",
                     listening=1, showPositions=True, PositionsColor="1 0 1 1",
                     sizeFactor=10, ExportPositions=True, ExportForces=True,
-                    fileName=os.path.join(HERE, "monitor", body["name"]))
+                    fileName=os.path.join(HERE, "monitor", body["name"])) is None:
+            print("[cushion] Monitor unavailable in this SOFA build; "
+                  f"point tracking disabled for body '{body['name']}'")
 
     # Full deformed-shape export (legacy VTK series, read back by SofaShape)
     if body.get("export_shape"):
@@ -264,12 +299,17 @@ def createScene(rootNode):
                                     "hideCollisionModels hideBoundingCollisionModels "
                                     "hideForceFields showInteractionForceFields hideWireframe")
     rootNode.addObject("FreeMotionAnimationLoop")
-    rootNode.addObject("GenericConstraintSolver", tolerance=1e-12,
-                       maxIterations=10000)
+    # GenericConstraintSolver was split into method-specific solvers in
+    # v25.12; BlockGaussSeidelConstraintSolver is the ProjectedGaussSeidel
+    # (default) replacement. Both take tolerance + maxIterations.
+    _add_first(rootNode,
+               ("GenericConstraintSolver", "BlockGaussSeidelConstraintSolver"),
+               tolerance=1e-12, maxIterations=10000)
 
     contacts = spec.get("contacts") or {}
     if contacts.get("enabled", True):
-        rootNode.addObject("DefaultPipeline")
+        # DefaultPipeline was renamed CollisionPipeline (alias removed v24.12)
+        _add_first(rootNode, ("CollisionPipeline", "DefaultPipeline"))
         rootNode.addObject("BruteForceBroadPhase")
         rootNode.addObject("BVHNarrowPhase")
         rules = contacts.get("rules", "")
@@ -279,11 +319,11 @@ def createScene(rootNode):
                                                      "FrictionContactConstraint"),
                                rules=rules)
         else:
-            rootNode.addObject("DefaultContactManager",
-                               response=contacts.get("response",
-                                                     "FrictionContactConstraint"),
-                               responseParams=contacts.get("response_params",
-                                                           "mu=0.9"))
+            # DefaultContactManager alias was removed in v24.12 -> CollisionResponse
+            _add_first(rootNode, ("DefaultContactManager", "CollisionResponse"),
+                       response=contacts.get("response",
+                                             "FrictionContactConstraint"),
+                       responseParams=contacts.get("response_params", "mu=0.9"))
         rootNode.addObject("LocalMinDistance", name="Proximity",
                            alarmDistance=contacts.get("alarm_distance", 5.0),
                            contactDistance=contacts.get("contact_distance", 1.0),
@@ -292,10 +332,16 @@ def createScene(rootNode):
     rootNode.addObject("BackgroundSetting", color=[1.0, 1.0, 1.0, 1.0])
     rootNode.addObject("OglSceneFrame", style="Arrows", alignment="TopRight")
 
+    # Always add a camera. v26.06 GUIs (imgui/glfw) ignore the old Qt
+    # .qglviewer.view file, so without one SOFA auto-creates a poorly-framed
+    # camera. If scene.json gives explicit values use them, else the
+    # controller frames it to the geometry AABB at load (see _frame_camera).
     cam = spec.get("camera")
     if cam:
         rootNode.addObject("InteractiveCamera", name="camera",
                            position=cam["position"], lookAt=cam["look_at"])
+    else:
+        rootNode.addObject("InteractiveCamera", name="camera")
 
     if spec.get("floor"):
         _add_floor(rootNode, spec["floor"])
