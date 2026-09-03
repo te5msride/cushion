@@ -116,7 +116,10 @@ class PressureScheduleController(Sofa.Core.Controller):
         # scheduled rigid motion (SofaProtocol): keyframed offset applied
         # through rest positions -- drags the body via its fixations
         self.protocols = []
-        for body in self.spec.get("bodies", []):
+        skip_proto = bool(os.environ.get("CUSHION_NO_PROTOCOL"))
+        if skip_proto:
+            print("[sofagh] CUSHION_NO_PROTOCOL set -> scripted base motion disabled")
+        for body in ([] if skip_proto else self.spec.get("bodies", [])):
             proto = body.get("protocol")
             if proto and proto.get("times"):
                 self.protocols.append({
