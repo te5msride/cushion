@@ -16,6 +16,11 @@ import os
 import select
 import sys
 
+try:
+    import msvcrt  # Windows: per-keystroke console reads (select() rejects stdin)
+except ImportError:
+    msvcrt = None
+
 import numpy as np
 import Sofa.Core
 
@@ -174,7 +179,11 @@ class PressureScheduleController(Sofa.Core.Controller):
             self._tw_applied = 0.0
             # stdin fallback: works even if the GUI does not forward keys.
             # Type the letters in this terminal + Enter.
-            self._stdin_ok = bool(getattr(sys.stdin, "isatty", lambda: False)())
+            if msvcrt is not None:
+                self._stdin_ok = True  # Windows console buffer (kbhit) is guarded
+            else:
+                self._stdin_ok = bool(
+                    getattr(sys.stdin, "isatty", lambda: False)())
             print("[sofagh] TELEOP on  ch{}  keys: I/K pressure  W/S insert  "
                   "A/D twist  X reset".format(self.tele_channel))
             print("[sofagh] type keys in the SOFA window, OR in this terminal "
@@ -383,6 +392,19 @@ class PressureScheduleController(Sofa.Core.Controller):
         Line-buffered: user types letters then Enter."""
         if not (self.tele_on and self._stdin_ok):
             return
+        if msvcrt is not None:
+            # Windows: console is not a socket, select() fails. Read each
+            # pending keystroke directly (no Enter needed).
+            while msvcrt.kbhit():
+                try:
+                    ch = msvcrt.getwch()
+                except Exception:  # noqa: BLE001
+                    break
+                if ch in ("\r", "\n", "\x00", "\xe0"):
+                    continue  # ignore Enter and the prefix byte of arrow/fn keys
+                self._apply_key(ch)
+            return
+        # POSIX: stdin is select-able.
         while select.select([sys.stdin], [], [], 0)[0]:
             line = sys.stdin.readline()
             if not line:

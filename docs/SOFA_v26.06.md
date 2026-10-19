@@ -34,6 +34,28 @@ grep -c "_load_plugins" <project dir>/scene.py
 ```
 `3` = v26.06 runtime. `0` = old 24.06 runtime (wrong package still installed).
 
+### If you get the OLD runtime after installing (important on machines that ever had an older Cushion)
+
+Rhino caches a plugin's Python at `~/.rhinocode/libs/<hash>/` and does **not**
+refresh that cache when you reinstall a package that reuses the same hash
+folder — and uninstalling the package never deletes it. So a machine that
+previously had an older Cushion keeps running the old runtime even after you
+install this one. Symptoms:
+- `scene.py` tries to load `SofaLoader`, `SofaSimpleFem`, `SofaEngine`, … (the
+  monolithic plugins removed in SOFA v24.12), or
+- teleop throws `OSError: [WinError 10038] ... not a socket`.
+
+Fix (Windows), with **Rhino fully closed**: unzip `cushion_fix.zip` (keeps
+`fix_cushion_runtime.ps1` next to a `sofagh/` folder) and run
+```
+powershell -ExecutionPolicy Bypass -File fix_cushion_runtime.ps1
+```
+It force-overwrites the cached runtime with the correct one, prints `PORT` for
+each cache folder, then: start Rhino, **regenerate the scene** (SofaScene
+`write=True`) so the project picks up the fixed `controller.py`. The same script
+lives in `scripts/` here; pass `-YakPath "<path>\cushion-0.2.0-any-any.yak"` if
+no Cushion is installed yet.
+
 ## Run
 
 Use `-g imgui` (the full GUI); `-g glfw` is a bare viewer, `-g batch` is headless.
